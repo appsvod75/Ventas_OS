@@ -1,0 +1,315 @@
+nohup: no se tendrá en cuenta la entrada
+
+  VITE v7.3.1  ready in 190 ms
+
+  ➜  Local:   http://localhost:4000/
+  ➜  Network: use --host to expose
+11:01:32 a. m. [vite] (client) hmr update /src/pages/Reports.tsx
+11:16:16 a. m. [vite] (client) hmr update /src/pages/Products.tsx
+11:16:28 a. m. [vite] (client) hmr update /src/pages/Products.tsx
+11:22:23 a. m. [vite] (client) hmr update /src/pages/Products.tsx
+11:27:05 a. m. [vite] (client) hmr update /src/pages/POS.tsx
+11:38:37 a. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+11:38:37 a. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+11:38:37 a. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+11:38:37 a. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+11:38:56 a. m. [vite] (client) hmr update /src/pages/Products.tsx
+11:50:44 a. m. [vite] (client) hmr update /src/pages/POS.tsx
+11:55:15 a. m. [vite] (client) hmr update /src/components/CheckoutModal.tsx
+11:55:17 a. m. [vite] (client) hmr update /src/components/CheckoutModal.tsx
+11:55:29 a. m. [vite] (client) hmr update /src/pages/POS.tsx
+11:59:44 a. m. [vite] (client) hmr update /src/pages/POS.tsx
+11:59:47 a. m. [vite] (client) hmr update /src/components/Ticket.tsx
+11:59:49 a. m. [vite] (client) hmr update /src/components/TicketModal.tsx
+11:59:51 a. m. [vite] (client) hmr update /src/components/TicketModal.tsx
+12:05:47 p. m. [vite] (client) hmr update /src/pages/Settings.tsx
+12:06:42 p. m. [vite] (client) hmr update /src/pages/Settings.tsx
+12:07:03 p. m. [vite] (client) hmr update /src/components/Ticket.tsx
+12:07:10 p. m. [vite] (client) hmr update /src/components/Ticket.tsx
+12:09:09 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:09:09 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: connect ECONNREFUSED 127.0.0.1:3015
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+12:10:30 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:10:30 p. m. [vite] Internal server error: /home/renosa/Documentos/LuckyPOS/frontend/src/pages/Reports.tsx: Missing semicolon. (64:30)
+
+  62 |     };
+  63 |
+> 64 |         { id: 'clients', title: 'Ranking de Clientes', desc: 'Fidelidad, consumo y deudas', icon: <Users size={32} />, color: '#3b82f6' },
+     |                               ^
+  65 |         { id: 'products', title: 'Top Productos', desc: 'Lo más vendido y recaudación', icon: <Package size={32} />, color: '#f59e0b' },
+  66 |         { id: 'users', title: 'Ventas por Vendedor', desc: 'Rendimiento por personal', icon: <Award size={32} />, color: '#ef4444' },
+  67 |         { id: 'financial', title: 'Balance Financiero', desc: 'Ventas vs Gastos y Utilidad', icon: <TrendingUp size={32} />, color: '#10b981' },
+  Plugin: vite:react-babel
+  File: /home/renosa/Documentos/LuckyPOS/frontend/src/pages/Reports.tsx:64:30
+  62 |      };
+  63 |  
+  64 |          { id: 'clients', title: 'Ranking de Clientes', desc: 'Fidelidad, consumo y deudas', icon: <Users size={32} />...
+     |                                ^
+  65 |          { id: 'products', title: 'Top Productos', desc: 'Lo más vendido y recaudación', icon: <Package size={32} />, ...
+  66 |          { id: 'users', title: 'Ventas por Vendedor', desc: 'Rendimiento por personal', icon: <Award size={32} />, col...
+      at constructor (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at TypeScriptParserMixin.raise (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at TypeScriptParserMixin.semicolon (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:6895:10)
+      at TypeScriptParserMixin.parseExpressionStatement (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13285:10)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12899:19)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseStatement (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12760:17)
+      at TypeScriptParserMixin.parseLabeledStatement (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13278:95)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12897:19)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13297:10)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12858:21)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseStatementListItem (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12747:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13316:61)
+      at TypeScriptParserMixin.parseBlockBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13309:10)
+      at TypeScriptParserMixin.parseBlock (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13297:10)
+      at TypeScriptParserMixin.parseFunctionBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12100:24)
+      at TypeScriptParserMixin.parseArrowExpression (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12075:10)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11687:12)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11331:23)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at TypeScriptParserMixin.parseExprSubscripts (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9786:20)
+      at /home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12421:16)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10800:17)
+      at TypeScriptParserMixin.parseVar (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13384:91)
+      at TypeScriptParserMixin.parseVarStatement (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13230:10)
+      at TypeScriptParserMixin.parseVarStatement (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9408:31)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12851:23)
+      at TypeScriptParserMixin.parseStatementContent (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9508:18)
+      at TypeScriptParserMixin.parseStatementLike (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12767:17)
+      at TypeScriptParserMixin.parseModuleItem (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12744:17)
+      at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13316:36)
+      at TypeScriptParserMixin.parseBlockBody (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:13309:10)
+      at TypeScriptParserMixin.parseProgram (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12622:10)
+12:10:42 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:11:51 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:12:02 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:12:56 p. m. [vite] (client) hmr update /src/pages/Inventory.tsx
+12:14:23 p. m. [vite] (client) hmr update /src/pages/Inventory.tsx
+12:25:19 p. m. [vite] (client) hmr update /src/pages/Inventory.tsx
+12:31:36 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:31:36 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:31:36 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:31:36 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:22 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: connect ECONNREFUSED 127.0.0.1:3015
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+12:46:41 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: connect ECONNREFUSED 127.0.0.1:3015
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+12:47:51 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:47:51 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: connect ECONNREFUSED 127.0.0.1:3015
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+12:50:17 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:50:17 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:50:17 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:50:17 p. m. [vite] http proxy error: /api/stats/dashboard
+Error: socket hang up
+    at Socket.socketOnEnd (node:_http_client:598:25)
+    at Socket.emit (node:events:520:35)
+    at endReadableNT (node:internal/streams/readable:1701:12)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)
+12:50:34 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:51:10 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:55:38 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+12:55:53 p. m. [vite] (client) hmr update /src/pages/Reports.tsx
+1:00:46 p. m. [vite] vite.config.ts changed, restarting server...
+1:00:46 p. m. [vite] server restarted.
+1:17:41 p. m. [vite] (client) hmr update /src/pages/Settings.tsx
+1:50:58 p. m. [vite] (client) hmr update /src/App.tsx
+2:03:14 p. m. [vite] (client) hmr update /src/pages/Settings.tsx
+2:03:14 p. m. [vite] Internal server error: /home/renosa/Documentos/LuckyPOS/frontend/src/pages/Settings.tsx: Unexpected token, expected "," (39:35)
+
+  37 |                             background: 'rgba(239, 68, 68, 0.05)',
+  38 |                             display: 'flex',
+> 39 |                             justify-content: 'space-between',
+     |                                    ^
+  40 |                             alignItems: 'center'
+  41 |                         }}>
+  42 |                             <h2 style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: '#f87171', margin: 0, fontSize: '1.3rem' }}>
+  Plugin: vite:react-babel
+  File: /home/renosa/Documentos/LuckyPOS/frontend/src/pages/Settings.tsx:39:35
+  37 |                              background: 'rgba(239, 68, 68, 0.05)',
+  38 |                              display: 'flex',
+  39 |                              justify-content: 'space-between',
+     |                                     ^
+  40 |                              alignItems: 'center'
+  41 |                          }}>
+      at constructor (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:365:19)
+      at TypeScriptParserMixin.raise (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:6599:19)
+      at TypeScriptParserMixin.unexpected (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:6619:16)
+      at TypeScriptParserMixin.expect (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:6899:12)
+      at TypeScriptParserMixin.parseObjectLike (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11822:14)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11339:23)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at TypeScriptParserMixin.parseExprSubscripts (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9786:20)
+      at TypeScriptParserMixin.parseExpressionBase (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10784:23)
+      at /home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10780:39
+      at TypeScriptParserMixin.allowInAnd (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12426:12)
+      at TypeScriptParserMixin.parseExpression (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10780:17)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4632:31)
+      at TypeScriptParserMixin.jsxParseAttributeValue (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4604:21)
+      at TypeScriptParserMixin.jsxParseAttribute (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4653:38)
+      at TypeScriptParserMixin.jsxParseOpeningElementAfterName (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4667:28)
+      at TypeScriptParserMixin.jsxParseOpeningElementAfterName (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10043:18)
+      at TypeScriptParserMixin.jsxParseOpeningElementAt (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4662:17)
+      at TypeScriptParserMixin.jsxParseElementAt (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4686:33)
+      at TypeScriptParserMixin.jsxParseElementAt (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at TypeScriptParserMixin.jsxParseElementAt (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4698:32)
+      at TypeScriptParserMixin.jsxParseElement (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4749:17)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4759:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+      at TypeScriptParserMixin.parseUpdate (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11066:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11046:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9837:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10899:61)
+      at TypeScriptParserMixin.parseExprOps (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10904:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10881:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10831:21)
+      at /home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9775:39
+      at TypeScriptParserMixin.tryParse (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:6907:20)
+      at TypeScriptParserMixin.parseMaybeAssign (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:9775:18)
+      at /home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10800:39
+      at TypeScriptParserMixin.allowInAnd (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12426:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:10800:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:12493:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11675:28)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11331:23)
+      at TypeScriptParserMixin.parseExprAtom (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:4764:20)
+      at TypeScriptParserMixin.parseExprSubscripts (/home/renosa/Documentos/LuckyPOS/frontend/node_modules/@babel/parser/lib/index.js:11081:23)
+2:05:54 p. m. [vite] (client) hmr update /src/pages/Settings.tsx
+2:07:56 p. m. [vite] (client) page reload index.html
+2:08:11 p. m. [vite] vite.config.ts changed, restarting server...
+2:08:11 p. m. [vite] server restarted.
+2:30:56 p. m. [vite] vite.config.ts changed, restarting server...
+2:30:56 p. m. [vite] server restarted.
+3:30:32 p. m. [vite] vite.config.ts changed, restarting server...
+3:30:32 p. m. [vite] server restarted.

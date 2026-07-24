@@ -1,0 +1,27 @@
+
+> frontend@1.0.0 build
+> tsc && vite build
+
+vite v7.3.1 building client environment for production...
+transforming...
+✓ 3051 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/registerSW.js                0.13 kB
+dist/manifest.webmanifest         0.33 kB
+dist/index.html                   0.63 kB │ gzip:   0.38 kB
+dist/assets/index-8NeXQBIG.css   11.22 kB │ gzip:   2.80 kB
+dist/assets/index-CJR_8Zac.js   655.24 kB │ gzip: 185.79 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.09s
+
+PWA v1.2.0
+mode      generateSW
+precache  5 entries (651.59 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-8c29f6e4.js

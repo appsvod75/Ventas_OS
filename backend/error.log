@@ -1,0 +1,92 @@
+PrismaClientValidationError: 
+Invalid `tx.saleH.create()` invocation in
+/home/renosa/Documentos/LuckyPOS/backend/controllers/sale.controller.js:54:44
+
+  51 
+  52 const finalTotal = total - discount;
+  53 
+→ 54 const newSale = await tx.saleH.create({
+       data: {
+         branchId: 1,
+         userId: 1,
+         clientId: 1,
+         total: 15,
+         discount: 0,
+         paymentMethod: "EFECTIVO",
+         status: "Pagado",
+         ~~~~~~
+         dueDate: null,
+         balance: 0,
+         details: {
+           create: [
+             {
+               productId: 1,
+               quantity: 1,
+               unitPrice: 15,
+               subtotal: 15
+             }
+           ]
+         },
+     ?   id?: Int,
+     ?   tax?: Decimal,
+     ?   createdAt?: DateTime
+       }
+     })
+
+Unknown argument `status`. Available options are marked with ?.
+    at Nn (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:29:1363)
+    at ei.handleRequestError (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:121:6911)
+    at ei.handleAndLogRequestError (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:121:6593)
+    at ei.request (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:121:6300)
+    at async a (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:130:9551)
+    at async /home/renosa/Documentos/LuckyPOS/backend/controllers/sale.controller.js:54:29
+    at async Proxy._transactionWithCallback (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:130:8120)
+    at async createSale (/home/renosa/Documentos/LuckyPOS/backend/controllers/sale.controller.js:9:22) {
+  clientVersion: '6.19.2'
+}
+PrismaClientValidationError: 
+Invalid `tx.saleH.create()` invocation in
+/home/renosa/Documentos/LuckyPOS/backend/controllers/sale.controller.js:54:44
+
+  51 
+  52 const finalTotal = total - discount;
+  53 
+→ 54 const newSale = await tx.saleH.create({
+       data: {
+         branchId: 1,
+         userId: 1,
+         clientId: 1,
+         total: 15,
+         discount: 0,
+         paymentMethod: "EFECTIVO",
+         status: "Pagado",
+         ~~~~~~
+         dueDate: null,
+         balance: 0,
+         details: {
+           create: [
+             {
+               productId: 1,
+               quantity: 1,
+               unitPrice: 15,
+               subtotal: 15
+             }
+           ]
+         },
+     ?   id?: Int,
+     ?   tax?: Decimal,
+     ?   createdAt?: DateTime
+       }
+     })
+
+Unknown argument `status`. Available options are marked with ?.
+    at Nn (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:29:1363)
+    at ei.handleRequestError (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:121:6911)
+    at ei.handleAndLogRequestError (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:121:6593)
+    at ei.request (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:121:6300)
+    at async a (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:130:9551)
+    at async /home/renosa/Documentos/LuckyPOS/backend/controllers/sale.controller.js:54:29
+    at async Proxy._transactionWithCallback (/home/renosa/Documentos/LuckyPOS/backend/node_modules/@prisma/client/runtime/library.js:130:8120)
+    at async createSale (/home/renosa/Documentos/LuckyPOS/backend/controllers/sale.controller.js:9:22) {
+  clientVersion: '6.19.2'
+}
