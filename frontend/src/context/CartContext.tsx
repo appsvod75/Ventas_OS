@@ -11,6 +11,7 @@ interface CartItem {
     selectedVariant?: any;
     notes?: string;
     is_service?: boolean;
+    hasCustomization?: boolean;
 }
 
 interface CartContextType {

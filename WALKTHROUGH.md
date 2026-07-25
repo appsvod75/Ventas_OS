@@ -6,6 +6,12 @@
 [Desarrollo Local] → [Build Frontend] → [Rsync a VPS] → [PM2]
 ```
 
+### Convenciones
+- Solo se suben archivos **fuente**: `.tsx`, `.js`, `.html`, `.css`, `.json`, etc.
+- **Nunca** se suben `node_modules/`, `dist/` local, `.db`, ni archivos binarios/grandes.
+- No se sube nada a GitHub a menos que el usuario lo pida explícitamente.
+- Todos los comandos de deploy se ejecutan desde **`~/proyectos/Ventas_OS$`** (raíz del proyecto).
+
 ---
 
 ## 1. Desarrollo Local
@@ -44,13 +50,29 @@ Esto genera:
 
 ## 3. Despliegue a VPS
 
-### Subir archivos desde máquina local
+Todos los comandos se ejecutan desde la **raíz del proyecto** (`~/proyectos/Ventas_OS$`).
+
+### Subir frontend (build + rsync)
 ```bash
-rsync -avz --exclude='node_modules' --exclude='.git' backend/ root@tudominio:/var/www/ventasee-os/backend/
-rsync -avz frontend/dist/ root@tudominio:/var/www/ventasee-os/frontend/dist/
+cd frontend && npm run build && rsync -avz dist/ root@64.23.176.98:/var/www/ventasee-os/dist/ && cd ..
 ```
 
-### En el VPS
+### Subir backend (solo archivos modificados)
+```bash
+rsync -avz backend/server.js root@64.23.176.98:/var/www/ventasee-os/backend/
+```
+
+### Subir backend completo (sin node_modules)
+```bash
+rsync -avz --exclude='node_modules' --exclude='.git' backend/ root@64.23.176.98:/var/www/ventasee-os/backend/
+```
+
+### Subir todo + reiniciar servicio
+```bash
+cd frontend && npm run build && rsync -avz dist/ root@64.23.176.98:/var/www/ventasee-os/dist/ && cd .. && rsync -avz backend/server.js root@64.23.176.98:/var/www/ventasee-os/backend/ && ssh root@64.23.176.98 "pm2 restart ventasee-os"
+```
+
+### En el VPS (primera vez o cambios en dependencias/DB)
 ```bash
 cd /var/www/ventasee-os/backend
 
@@ -173,12 +195,13 @@ En el modal de cobro, seleccionar **PAGO PARCIAL**:
 - Eliminar Productos
 - **Reiniciar # de Ventas** (resetea contador autoincrement)
 
-### Tarea Pendiente: Personalización de Productos
-- Campo `hasCustomization` en Product
-- Campo `customData` (JSON) en SaleD para: posición, talla, imageUrl, notas
-- En carrito: botón acción para abrir modal con formulario
-- En historial: modal solo lectura con imagen ampliable
-- Pendiente de que el cliente defina el formato exacto
+### Diseños / Personalización de Productos
+- **Implementado**: Campo `hasCustomization` (boolean) en Product con toggle rosa en el modal
+- **Implementado**: Botón de acción rosa (`Palette`) en carrito POS para productos con Diseños
+- **Implementado**: Modal "En Construcción" al presionar el botón
+- **Pendiente**: Campo `customData` (JSON) en SaleD para posición, talla, imageUrl, notas
+- **Pendiente**: Modal con formulario de personalización (esperando formato del admin)
+- **Pendiente**: En historial, modal solo lectura con imagen ampliable
 
 ---
 
@@ -187,16 +210,15 @@ En el modal de cobro, seleccionar **PAGO PARCIAL**:
 ### Actualizar versión en clientes
 El sistema detecta cambios en `/version.json` y fuerza recarga automática.
 
-### Cambios en backend
+### Cambios en backend (sin node_modules)
 ```bash
-rsync -avz --exclude='node_modules' backend/ root@tudominio:/var/www/ventasee-os/backend/
-ssh root@tudominio "cd /var/www/ventasee-os/backend && npm install --production && npx prisma generate && pm2 restart ventasee-os"
+rsync -avz --exclude='node_modules' backend/ root@64.23.176.98:/var/www/ventasee-os/backend/
+ssh root@64.23.176.98 "cd /var/www/ventasee-os/backend && npm install --production && npx prisma generate && pm2 restart ventasee-os"
 ```
 
 ### Cambios solo en frontend
 ```bash
-cd frontend && npm run build
-rsync -avz frontend/dist/ root@tudominio:/var/www/ventasee-os/frontend/dist/
+cd frontend && npm run build && rsync -avz dist/ root@64.23.176.98:/var/www/ventasee-os/dist/
 ```
 
 ### Ver logs

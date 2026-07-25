@@ -85,6 +85,7 @@ LuckyPOS/
 - **Offline queue**: Cola de ventas offline en localStorage
 - **Seguridad**: PIN para Configuración, eliminar productos, eliminar clientes
 - **Reset de datos**: Zona de peligro con limpieza de ventas, inventario, productos y contador
+- **Diseños**: Productos con personalización (toggle `hasCustomization`). En POS, botón rosa en el carrito → modal "En Construcción" (pendiente de formato del admin)
 
 ## Sidebar Configurable
 Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebarConfig`.
@@ -111,11 +112,18 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 - Se configura en creación/edición de producto, junto a proveedores
 - Uso futuro: reportes de comisiones por vendedor
 
-## Tarea Pendiente: Personalización de Productos (Stamping)
-- Agregar campo `hasCustomization` (boolean) a Product
-- Agregar campo `customData` (JSON) a SaleD
-- En el carrito, botón acción junto al delete para productos con personalización
-- Modal con campos: posición, talla, imageUrl, observaciones (formato a definir)
+## Diseños / Personalización de Productos (Stamping)
+
+### Estado Actual (Implementado)
+- `hasCustomization` (boolean) agregado a `Product` en Prisma, backend y frontend
+- Toggle "Diseños" en el modal de creación/edición de producto (estilo rosa cuando activo)
+- Columna "Diseños" en la tabla de productos (Sí/No)
+- En el carrito POS: botón rosa (`Palette`) junto al de eliminar para productos con `hasCustomization=true`
+- Modal "En Construcción" al presionar el botón (pendiente de formato del admin)
+
+### Pendiente
+- Agregar campo `customData` (JSON) a SaleD para guardar: posición, talla, imageUrl, notas
+- Modal con formulario de personalización (formato a definir por el admin)
 - En Historial → Ver Detalle, mostrar modal en solo lectura con imagen ampliable
 
 ## Despliegue en Producción (VPS)

@@ -140,6 +140,22 @@
                     display: flex; align-items: center; gap: 4px;
                     font-size: 0.65rem; color: #94a3b8; font-weight: 700;
                 }
+                .design-badge {
+                    color: #ec4899 !important;
+                    background: rgba(236, 72, 153, 0.15) !important;
+                    border: 1px solid rgba(236, 72, 153, 0.3) !important;
+                }
+                .t-designs-tag {
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 0.75rem;
+                    font-weight: 700;
+                    color: #ec4899;
+                }
+                .t-designs-tag.disabled {
+                    color: #475569;
+                }
 
                 /* TABLE VIEW STYLES */
                 .products-container { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }

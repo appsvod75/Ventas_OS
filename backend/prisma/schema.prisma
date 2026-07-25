@@ -90,6 +90,7 @@ model Product {
   averageCost     Float             @default(0)
   isService       Boolean           @default(false)
   isActive        Boolean           @default(true)
+  hasCustomization Boolean          @default(false)
   commissionType  String?
   commissionValue Float             @default(0)
   createdAt       DateTime          @default(now())

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { Search, ShoppingCart, User, Store, ChevronRight, Pill, Info, Plus, Minus, Trash2, X, Maximize2, FileText, CheckCircle2, Delete } from 'lucide-react';
+import { Search, ShoppingCart, User, Store, ChevronRight, Pill, Info, Plus, Minus, Trash2, X, Maximize2, FileText, CheckCircle2, Delete, Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { productApi, saleApi, configApi } from '../services/api';
 import { socket, socketEvents } from '../services/socket';
@@ -39,6 +39,7 @@ const POS: React.FC = () => {
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
   const [config, setConfig] = useState<any>(null);
   const [flyingItems, setFlyingItems] = useState<any[]>([]);
+  const [designModal, setDesignModal] = useState<{ isOpen: boolean; item: any }>({ isOpen: false, item: null });
   const printRef = useRef<HTMLDivElement>(null);
 
   const user = JSON.parse(localStorage.getItem('user') || '{"name": "Usuario"}');
@@ -415,6 +416,11 @@ const POS: React.FC = () => {
                         <Plus size={12} />
                       </button>
                     </div>
+                    {item.hasCustomization && (
+                      <button className="design-btn" onClick={() => setDesignModal({ isOpen: true, item })} title="Diseños">
+                        <Palette size={14} />
+                      </button>
+                    )}
                     <button className="del-btn" onClick={() => removeFromCart(item.cartItemId)}>
                       <Trash2 size={14} />
                     </button>
@@ -642,6 +648,43 @@ const POS: React.FC = () => {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Diseños */}
+      <AnimatePresence>
+        {designModal.isOpen && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDesignModal({ isOpen: false, item: null })}
+            style={{ zIndex: 2000 }}
+          >
+            <motion.div
+              className="design-modal"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="design-modal-header">
+                <Palette size={24} />
+                <h3>Diseños - {designModal.item?.name}</h3>
+                <button className="design-modal-close" onClick={() => setDesignModal({ isOpen: false, item: null })}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div className="design-modal-body">
+                <div className="design-construction">
+                  <Palette size={48} />
+                  <h4>En Construcción</h4>
+                  <p>Esta funcionalidad estará disponible próximamente.</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -1469,6 +1512,90 @@ const POS: React.FC = () => {
         }
         
         @media (max-width: 640px) {
+        }
+
+        .design-btn {
+          background: rgba(236, 72, 153, 0.1);
+          border: 1px solid rgba(236, 72, 153, 0.3);
+          color: #ec4899;
+          width: 28px;
+          height: 28px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .design-btn:hover {
+          background: rgba(236, 72, 153, 0.2);
+          border-color: #ec4899;
+        }
+
+        .design-modal {
+          background: #1e293b;
+          border: 1px solid #334155;
+          border-radius: 20px;
+          max-width: 480px;
+          width: 90%;
+          overflow: hidden;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .design-modal-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          border-bottom: 1px solid #334155;
+          color: #ec4899;
+        }
+        .design-modal-header h3 {
+          flex: 1;
+          font-size: 1rem;
+          font-weight: 800;
+          color: white;
+          margin: 0;
+        }
+        .design-modal-close {
+          background: none;
+          border: none;
+          color: #64748b;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 8px;
+          transition: all 0.2s;
+        }
+        .design-modal-close:hover {
+          background: #334155;
+          color: white;
+        }
+        .design-modal-body {
+          padding: 2rem 1.25rem;
+          display: flex;
+          justify-content: center;
+        }
+        .design-construction {
+          text-align: center;
+          color: #64748b;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .design-construction svg {
+          color: #ec4899;
+          opacity: 0.5;
+        }
+        .design-construction h4 {
+          font-size: 1.2rem;
+          font-weight: 800;
+          color: #94a3b8;
+          margin: 0;
+        }
+        .design-construction p {
+          font-size: 0.85rem;
+          color: #64748b;
+          margin: 0;
         }
       `}</style>
     </div >

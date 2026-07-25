@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Edit, Trash2, X, Pill, DollarSign, Package, Check, Layers, AlertCircle, Info, Hash, LayoutGrid, List, Eye, EyeOff, RotateCcw, Image, ImageOff, Truck, Store, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, X, Pill, DollarSign, Package, Check, Layers, AlertCircle, Info, Hash, LayoutGrid, List, Eye, EyeOff, RotateCcw, Image, ImageOff, Truck, Store, CheckCircle2, ShieldAlert, Palette } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import ProductModal from '../components/ProductModal';
 import { productApi, adminAuthApi } from '../services/api';
@@ -281,6 +281,12 @@ const Products: React.FC = () => {
                                                     <span>{p.variants.length}</span>
                                                 </div>
                                             )}
+                                            {p.hasCustomization && (
+                                                <div className="p-variants-badge design-badge" title="Con Diseños">
+                                                    <Palette size={10} />
+                                                    <span>Diseños</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -296,6 +302,7 @@ const Products: React.FC = () => {
                                         <th>SKU</th>
                                         <th>Categoría</th>
                                         <th>Precio Base</th>
+                                        <th>Diseños</th>
                                         <th>Tiers</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -323,6 +330,15 @@ const Products: React.FC = () => {
                                                 </span>
                                             </td>
                                             <td className="t-price-cell">${Number(p.base_price || p.basePrice).toFixed(2)}</td>
+                                            <td>
+                                                {p.hasCustomization ? (
+                                                    <span className="t-designs-tag">
+                                                        <Palette size={12} /> Sí
+                                                    </span>
+                                                ) : (
+                                                    <span className="t-designs-tag disabled">No</span>
+                                                )}
+                                            </td>
                                             <td>
                                                 {p.variants?.length > 0 ? (
                                                     <span className="t-variants-tag">{p.variants.length} tiers</span>

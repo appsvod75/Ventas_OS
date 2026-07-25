@@ -188,7 +188,7 @@ const getProductById = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, commissionType, commissionValue } = req.body;
+    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, commissionType, commissionValue, hasCustomization } = req.body;
     console.log('--- DEBUG: createProduct Body ---', JSON.stringify(req.body, null, 2));
     console.log('--- DEBUG: User Branch ID ---', req.user.branch_id);
     
@@ -202,6 +202,7 @@ const createProduct = async (req, res) => {
                 ...(parsedCategoryId ? { category: { connect: { id: parsedCategoryId } } } : {}),
                 basePrice: parseFloat(basePrice || 0),
                 isService: !!isService,
+                hasCustomization: !!hasCustomization,
                 description: description || undefined,
                 imageUrl: imageUrl || undefined,
                 commissionType: commissionType || null,
@@ -263,7 +264,7 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, isActive, commissionType, commissionValue } = req.body;
+    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, isActive, commissionType, commissionValue, hasCustomization } = req.body;
     try {
         const product = await prisma.$transaction(async (tx) => {
             // Delete old variants
@@ -285,6 +286,7 @@ const updateProduct = async (req, res) => {
                     ...(categoryId ? { category: { connect: { id: parseInt(categoryId) } } } : {}),
                     basePrice: parseFloat(basePrice || 0),
                     isService: !!isService,
+                    hasCustomization: hasCustomization !== undefined ? !!hasCustomization : undefined,
                     description: description || undefined,
                     imageUrl: imageUrl || undefined,
                     ...(isActive !== undefined ? { isActive } : {}),

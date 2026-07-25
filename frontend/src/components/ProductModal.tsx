@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
     X, DollarSign, Package, Check, Layers, Info, Hash, AlertCircle, ShieldAlert,
-    Image as ImageIcon, Plus, Trash2, Truck, Store, CheckCircle2 
+    Image as ImageIcon, Plus, Trash2, Truck, Store, CheckCircle2, Palette 
 } from 'lucide-react';
 import { productApi, providerApi, adminAuthApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -41,6 +41,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         categoryId: '',
         basePrice: '',
         isService: false,
+        hasCustomization: false,
         description: '',
         imageUrl: '',
         variants: [] as any[],
@@ -81,6 +82,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 categoryId: editingProduct.categoryId?.toString() || '',
                 basePrice: editingProduct.basePrice?.toString() || editingProduct.base_price?.toString() || '',
                 isService: !!editingProduct.isService || !!editingProduct.is_service,
+                hasCustomization: !!editingProduct.hasCustomization,
                 description: editingProduct.description || '',
                 imageUrl: editingProduct.imageUrl || '',
                 variants: editingProduct.variants || [],
@@ -97,6 +99,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 categoryId: '',
                 basePrice: '',
                 isService: false,
+                hasCustomization: false,
                 description: '',
                 imageUrl: '',
                 variants: [],
@@ -277,6 +280,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                             <input type="checkbox" hidden checked={formData.isService} onChange={e => setFormData({ ...formData, isService: e.target.checked })} />
                                             <CheckCircle2 size={14} />
                                             <span>Servicio</span>
+                                        </label>
+                                        <label className={`compact-toggle ${formData.hasCustomization ? 'active-pink' : ''}`}>
+                                            <input type="checkbox" hidden checked={formData.hasCustomization} onChange={e => setFormData({ ...formData, hasCustomization: e.target.checked })} />
+                                            <Palette size={14} />
+                                            <span>Diseños</span>
                                         </label>
                                     </div>
                                     
@@ -654,6 +662,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         .compact-toggle.active-fixed span { color: #10b981; }
                         .compact-toggle.active-pct { background: rgba(245, 158, 11, 0.15); border-color: #f59e0b; }
                         .compact-toggle.active-pct span { color: #f59e0b; }
+                        .compact-toggle.active-pink { background: rgba(236, 72, 153, 0.15); border-color: #ec4899; }
+                        .compact-toggle.active-pink svg { color: #ec4899; }
+                        .compact-toggle.active-pink span { color: #ec4899; }
 
                         .stock-pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 0.6rem; }
                         .stock-pricing-grid .field input { height: clamp(38px, 4.2vh, 44px); box-sizing: border-box; }
