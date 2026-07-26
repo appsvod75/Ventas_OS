@@ -9,6 +9,7 @@
 ### Convenciones
 - Solo se suben archivos **fuente**: `.tsx`, `.js`, `.html`, `.css`, `.json`, etc.
 - **Nunca** se suben `node_modules/`, `dist/` local, `.db`, ni archivos binarios/grandes.
+- **⚠️ CRÍTICO**: Nunca subir `misventas.db` local al VPS. La BD de producción tiene datos reales. Los cambios de esquema se aplican con `npx prisma db push` en el VPS. Para regenerar datos semilla: `npm run seed` en el VPS.
 - No se sube nada a GitHub a menos que el usuario lo pida explícitamente.
 - Todos los comandos de deploy se ejecutan desde **`~/proyectos/Ventas_OS$`** (raíz del proyecto).
 
@@ -247,7 +248,20 @@ Crea: 38 permisos, 3 roles, superadmin (PIN: `020518`), sucursal por defecto, cl
 
 ---
 
-## 8. Consideraciones Importantes
+## Fixes Aplicados (25/07/2026)
+
+| Fix | Descripción |
+|-----|-------------|
+| CORS | Agregado `https://minegocio.luckyapps.online` a orígenes permitidos |
+| Puerto | `PORT=3019` en `.env` del VPS (coincide con nginx) |
+| PM2 persistente | `pm2 save && pm2 startup` ejecutado |
+| PWA Update | Eliminado `initAppVersionSync` que causaba recargas en logout. `registerType: 'prompt'` con notificación única por versión vía localStorage |
+| Error Config | `JSON.parse` duplicado en `labelFields` corregido (backend ya lo parsea) |
+| DB local | Advertencia: no subir `misventas.db` local al VPS |
+
+---
+
+## 9. Consideraciones Importantes
 
 1. **Siempre hacer build antes de subir** - Verificar que no hay errores de TypeScript
 2. **Version.json** - Se regenera en cada build

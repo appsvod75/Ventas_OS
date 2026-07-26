@@ -122,8 +122,9 @@ const Sidebar: React.FC = () => {
             key={item.path}
             to={item.path}
             className={`menu-item ${location.pathname === item.path ? 'active' : ''}`}
+            data-has-icon={!!item.icon}
           >
-            {item.icon}
+            {item.icon || <div style={{width:24,height:24,background:'red',borderRadius:4}} />}
             <span>{item.label}</span>
           </Link>
         ))}

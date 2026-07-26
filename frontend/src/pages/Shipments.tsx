@@ -232,7 +232,7 @@ const Shipments: React.FC = () => {
                 onClose={() => setLabelShipment(null)}
                 shipment={labelShipment || {}}
                 businessConfig={config}
-                labelFields={config.labelFields ? JSON.parse(config.labelFields) : []}
+                labelFields={config.labelFields || []}
             />
         </div>
     );

@@ -128,3 +128,8 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 
 ## Despliegue en Producción (VPS)
 Ver `WALKTHROUGH.md` para el flujo completo.
+
+### ⚠️ Regla crítica: BD local vs VPS
+- **Nunca** subir `misventas.db` local al VPS. La base de producción tiene datos reales.
+- Los cambios de esquema se aplican vía `npx prisma db push` directamente en el VPS.
+- Para regenerar datos semilla (permisos, roles, config): `npm run seed` en el VPS.

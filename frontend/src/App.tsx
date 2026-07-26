@@ -28,8 +28,6 @@ import DailySummary from './pages/DailySummary';
 import Transfers from './pages/Transfers';
 import Shipments from './pages/Shipments';
 import { CartProvider } from './context/CartContext';
-import { initAppVersionSync } from './lib/appUpdate';
-import ReloadPrompt from './components/ReloadPrompt';
 import PWAInstallBanner from './components/PWAInstallBanner';
 import { getUser, hasRole, ROLES } from './utils/permissions';
 
@@ -59,9 +57,6 @@ const App: React.FC = () => {
 
         window.addEventListener('error', handleAssetError, true);
 
-        // --- AUTO-UPDATE (versión mejorada desde CarWash_OS) ---
-        const stopSync = initAppVersionSync();
-
         // --- SOCKET.IO FORCED LOGOUT ---
         socket.on(socketEvents.FORCE_LOGOUT, (data: any) => {
             console.log('⚠️ CIERRE FORZADO RECIBIDO:', data.message);
@@ -90,17 +85,25 @@ const App: React.FC = () => {
         };
         window.addEventListener('config-updated', handleConfigUpdate);
 
+        const currentVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
+        const lastVersion = localStorage.getItem('lucky_app_version');
+        if (currentVersion && lastVersion && lastVersion !== currentVersion) {
+            const name = document.title || 'LuckyPOS';
+            import('react-hot-toast').then(({ toast }) => {
+                toast.success(`${name} se ha actualizado a la última versión automáticamente`, { duration: 3000 });
+            });
+        }
+        if (currentVersion) localStorage.setItem('lucky_app_version', currentVersion);
+
         return () => {
             window.removeEventListener('error', handleAssetError, true);
             window.removeEventListener('config-updated', handleConfigUpdate);
-            stopSync();
         };
     }, []);
 
     return (
         <CartProvider>
             <PWAInstallBanner />
-            <ReloadPrompt />
             <Toaster
                 position="top-center"
                 reverseOrder={false}

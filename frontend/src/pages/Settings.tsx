@@ -210,7 +210,7 @@ const Settings: React.FC = () => {
                     enableEmailTickets: res.data.enableEmailTickets || false,
                     enableQrCode: res.data.enableQrCode || false,
                     ticketWidth: res.data.ticketWidth || '58mm',
-                    labelFields: res.data.labelFields ? JSON.parse(res.data.labelFields) : ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'],
+                    labelFields: res.data.labelFields || ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'],
                     sidebarConfig: res.data.sidebarConfig || [
                         { key: 'pos', label: 'Ventas (POS)', enabled: true },
                         { key: 'summary', label: 'Resumen Día', enabled: true },
@@ -233,7 +233,8 @@ const Settings: React.FC = () => {
                     ]
                 });
             }
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Error al cargar config:', error, error?.response?.data);
             toast.error('Error al cargar configuración');
         }
     };
