@@ -38,7 +38,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
 
     const isTablet = true; // FORZADO PARA PC (Videos): window.matchMedia('(min-width: 901px) and (max-width: 1300px)').matches;
 
-    const [dueDate, setDueDate] = useState<string>(format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd'));
+    const [dueDate, setDueDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
+    const minDueDate = format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
     const [saleDate, setSaleDate] = useState<string>(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
     const [shippingDate, setShippingDate] = useState<string>('');
 
@@ -357,12 +358,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                     </div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span style={{ color: '#94a3b8', fontSize: '0.65rem', fontWeight: 700 }}>VENCE:</span>
-                                        <input 
-                                            type="date"
-                                            value={dueDate}
-                                            onChange={e => setDueDate(e.target.value)}
-                                            style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 700, textAlign: 'right', outline: 'none', fontFamily: 'inherit' }}
-                                        />
+                        <input 
+                            type="date"
+                            value={dueDate}
+                            min={minDueDate}
+                            onChange={e => setDueDate(e.target.value)}
+                            style={{ background: 'transparent', border: 'none', color: '#94a3b8' }}
+                        />
                                     </div>
                                 </div>
                             </div>
@@ -404,12 +406,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                             <div className="section-card">
                                 <h4 className="section-title"><Calendar size={14} /> FECHA DE VENCIMIENTO</h4>
                                 <div className="amount-input-wrapper date-input-wrapper">
-                                    <input 
-                                        type="date"
-                                        value={dueDate}
-                                        onChange={e => setDueDate(e.target.value)}
-                                        className="checkout-date-input"
-                                    />
+            <input 
+                type="date"
+                value={dueDate}
+                min={minDueDate}
+                onChange={e => setDueDate(e.target.value)}
+                className="checkout-date-input"
+            />
                                 </div>
                             </div>
                         )}
