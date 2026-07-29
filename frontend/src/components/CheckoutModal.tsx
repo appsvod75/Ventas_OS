@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, MapPin, Calendar, CreditCard, Banknote, UserPlus, X, ShoppingCart, Plus, CheckCircle2, ChevronRight, Save, Building2, Delete, User, Phone, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clientApi } from '../services/api';
+import { clientApi, adminAuthApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import VirtualKeyboard from './VirtualKeyboard';
@@ -11,7 +11,7 @@ interface CheckoutModalProps {
     orderTotal: number;
     shipping?: number;
     onClose: () => void;
-    onConfirm: (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string) => void;
+    onConfirm: (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number) => void;
 }
 
 const PaymentMethod = {
@@ -35,6 +35,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
     const [isNewClientKeyboardOpen, setIsNewClientKeyboardOpen] = useState(false);
     const [activeField, setActiveField] = useState<string | null>(null);
     const [isPartialPayment, setIsPartialPayment] = useState(false);
+    const [sellers, setSellers] = useState<any[]>([]);
+    const [selectedSellerId, setSelectedSellerId] = useState<number | null>(null);
 
     const isTablet = true; // FORZADO PARA PC (Videos): window.matchMedia('(min-width: 901px) and (max-width: 1300px)').matches;
 
@@ -53,15 +55,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
 
     useEffect(() => {
         setSaleDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
-        const loadClients = async () => {
+        const loadData = async () => {
             try {
-                const res = await clientApi.getClients();
-                setClients(res.data);
+                const [clientsRes, usersRes] = await Promise.all([
+                    clientApi.getClients(),
+                    isAdmin ? adminAuthApi.getUsers() : Promise.resolve({ data: [] })
+                ]);
+                setClients(clientsRes.data);
+                if (isAdmin && usersRes.data?.length) {
+                    setSellers(usersRes.data);
+                    setSelectedSellerId(usersRes.data.find((u: any) => u.id === user.id)?.id || user.id);
+                }
             } catch (err) {
-                console.error("Error loading clients", err);
+                console.error("Error loading data", err);
             }
         };
-        loadClients();
+        loadData();
     }, []);
 
     const remainingBalance = useMemo(() => {
@@ -111,11 +120,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
         if (isPartialPayment) {
             const partialAmount = parseFloat(amountTendered) || 0;
             const paymentLabel = method + '+CREDITO';
-            onConfirm(paymentLabel, partialAmount, selectedClient, dueDate, isAdmin ? saleDate : undefined, shipDate);
+            onConfirm(paymentLabel, partialAmount, selectedClient, dueDate, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined);
             return;
         }
         const finalTendered = method === PaymentMethod.CASH ? (parseFloat(amountTendered) || orderTotal) : orderTotal;
-        onConfirm(method, finalTendered, selectedClient, method === PaymentMethod.CREDIT ? dueDate : undefined, isAdmin ? saleDate : undefined, shipDate);
+        onConfirm(method, finalTendered, selectedClient, method === PaymentMethod.CREDIT ? dueDate : undefined, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined);
     };
 
     const filteredClients = clients.filter(c =>
@@ -380,6 +389,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                     onChange={e => setSaleDate(e.target.value)}
                                     style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.65rem', fontWeight: 700, outline: 'none', fontFamily: 'inherit', flex: 1 }}
                                 />
+                            </div>
+                        )}
+                        {isAdmin && sellers.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginTop: '0.25rem' }}>
+                                <User size={12} style={{ color: '#64748b' }} />
+                                <span style={{ color: '#64748b', fontSize: '0.6rem', fontWeight: 700, whiteSpace: 'nowrap' }}>VENDEDOR:</span>
+                                <select value={selectedSellerId || ''} onChange={e => setSelectedSellerId(Number(e.target.value))}
+                                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.65rem', fontWeight: 700, outline: 'none', fontFamily: 'inherit', flex: 1, cursor: 'pointer' }}>
+                                    {sellers.map((s: any) => (
+                                        <option key={s.id} value={s.id} style={{ background: '#1e293b', color: 'white' }}>{s.name}</option>
+                                    ))}
+                                </select>
                             </div>
                         )}
 

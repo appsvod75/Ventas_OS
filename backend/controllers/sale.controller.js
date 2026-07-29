@@ -4,8 +4,12 @@ const { getIO } = require('../services/socketManager');
 
 const createSale = async (req, res) => {
     let { branch_id, items, payment_method, discount = 0, client_id, due_date, amount_tendered, change, customDate, shipping = 0, balance, shipping_date, fulfillment_status } = req.body;
-    const user_id = req.user.id;
+    let user_id = req.body.user_id || req.user.id;
     const user_role = req.user.role;
+    // Solo admin puede asignar venta a otro usuario
+    if (user_role !== 'Super Admin' && user_role !== 'Admin') {
+        user_id = req.user.id;
+    }
 
     if (!items || items.length === 0) {
         return res.status(400).json({ message: 'La venta debe tener al menos un producto.' });

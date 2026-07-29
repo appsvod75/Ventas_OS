@@ -116,7 +116,7 @@ const POS: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handleConfirmCheckout = async (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string) => {
+  const handleConfirmCheckout = async (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number) => {
     if (cart.length === 0) return;
 
     const cartTotal = cart.reduce((sum, item) => {
@@ -130,6 +130,7 @@ const POS: React.FC = () => {
 
     const saleData = {
       branch_id: user.branch_id || 1,
+      user_id: userId,
       payment_method: paymentMethod,
       client_id: targetClient ? targetClient.id : 1,
       due_date: dueDate,
