@@ -14,7 +14,7 @@ const getConfig = async (req, res) => {
             try {
                 config.sidebarConfig = JSON.parse(config.sidebarConfig);
             } catch (e) {
-                config.sidebarConfig = [];
+                config.sidebarConfig = {};
             }
         }
         if (config.labelFields && typeof config.labelFields === 'string') {

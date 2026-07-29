@@ -42,6 +42,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         basePrice: '',
         isService: false,
         hasCustomization: false,
+        allowPriceChange: false,
         description: '',
         imageUrl: '',
         variants: [] as any[],
@@ -58,6 +59,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletePin, setDeletePin] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [showTierModal, setShowTierModal] = useState(false);
+    const [editingTierIndex, setEditingTierIndex] = useState<number | null>(null);
+    const [tierForm, setTierForm] = useState({ name: '', quantity: '', price: '' });
 
     useEffect(() => {
         if (!isOpen) return;
@@ -83,6 +87,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 basePrice: editingProduct.basePrice?.toString() || editingProduct.base_price?.toString() || '',
                 isService: !!editingProduct.isService || !!editingProduct.is_service,
                 hasCustomization: !!editingProduct.hasCustomization,
+                allowPriceChange: !!editingProduct.allowPriceChange,
                 description: editingProduct.description || '',
                 imageUrl: editingProduct.imageUrl || '',
                 variants: editingProduct.variants || [],
@@ -100,6 +105,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 basePrice: '',
                 isService: false,
                 hasCustomization: false,
+                allowPriceChange: false,
                 description: '',
                 imageUrl: '',
                 variants: [],
@@ -210,6 +216,35 @@ const ProductModal: React.FC<ProductModalProps> = ({
         }
     };
 
+    const handleOpenAddTier = () => {
+        setTierForm({ name: '', quantity: '', price: '' });
+        setEditingTierIndex(null);
+        setShowTierModal(true);
+    };
+
+    const handleOpenEditTier = (idx: number) => {
+        const v = formData.variants[idx];
+        setTierForm({ name: v.name, quantity: v.quantity, price: v.price });
+        setEditingTierIndex(idx);
+        setShowTierModal(true);
+    };
+
+    const handleSaveTier = () => {
+        if (!tierForm.name.trim()) {
+            toast.error('El nombre de la unidad es requerido');
+            return;
+        }
+        const newVariant = { name: tierForm.name.toUpperCase(), quantity: tierForm.quantity || '1', price: tierForm.price || '0' };
+        const nv = [...formData.variants];
+        if (editingTierIndex !== null) {
+            nv[editingTierIndex] = newVariant;
+        } else {
+            nv.push(newVariant);
+        }
+        setFormData({ ...formData, variants: nv });
+        setShowTierModal(false);
+    };
+
     if (!isOpen) return null;
 
     return (
@@ -285,6 +320,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                             <input type="checkbox" hidden checked={formData.hasCustomization} onChange={e => setFormData({ ...formData, hasCustomization: e.target.checked })} />
                                             <Palette size={14} />
                                             <span>Diseños</span>
+                                        </label>
+                                        <label className={`compact-toggle ${formData.allowPriceChange ? 'active-sky' : ''}`}>
+                                            <input type="checkbox" hidden checked={formData.allowPriceChange} onChange={e => setFormData({ ...formData, allowPriceChange: e.target.checked })} />
+                                            <DollarSign size={14} />
+                                            <span>Precio Libre</span>
                                         </label>
                                     </div>
                                     
@@ -396,7 +436,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                 <div className="tiers-column">
                                     <div className="section-header">
                                         <h3 className="section-title"><Layers size={16} /> Tiers</h3>
-                                        <button type="button" className="btn-add-tier" onClick={() => setFormData({...formData, variants: [...formData.variants, {name: '', quantity: '', price: ''}]})}>
+                                        <button type="button" className="btn-add-tier" onClick={handleOpenAddTier}>
                                             <Plus size={14} />
                                         </button>
                                     </div>
@@ -410,27 +450,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
                                             </div>
                                         )}
                                         {formData.variants.map((v, idx) => (
-                                            <div key={idx} className="variant-row-compact">
-                                                <input type="text" placeholder="Unidad" value={v.name} onChange={e => {
-                                                    const nv = [...formData.variants]; nv[idx].name = e.target.value.toUpperCase(); setFormData({...formData, variants: nv});
-                                                }} onFocus={() => { setActiveField('variantName'); setActiveVariantIdx(idx); setActiveKeyboard('qwerty'); }} inputMode="none" />
-                                                <input type="number" placeholder="Cant" value={v.quantity} onChange={e => {
-                                                    const nv = [...formData.variants]; nv[idx].quantity = e.target.value; setFormData({...formData, variants: nv});
-                                                }} onFocus={() => { setActiveField('variantQty'); setActiveVariantIdx(idx); setActiveKeyboard('numeric'); }} inputMode="none" />
-                                                <input type="number" step="0.01" placeholder="Precio" value={v.price} 
-                                                    onChange={e => {
-                                                        const nv = [...formData.variants]; nv[idx].price = e.target.value; setFormData({...formData, variants: nv});
-                                                    }} 
-                                                    onFocus={() => { setActiveField('variantPrice'); setActiveVariantIdx(idx); setActiveKeyboard('numeric'); }}
-                                                    inputMode="none"
-                                                    onBlur={e => {
-                                                        const val = parseFloat(e.target.value);
-                                                        if(!isNaN(val)) {
-                                                            const nv = [...formData.variants]; nv[idx].price = val.toFixed(2); setFormData({...formData, variants: nv});
-                                                        }
-                                                    }}
-                                                />
-                                                <button type="button" className="btn-del-tier" onClick={() => setFormData({...formData, variants: formData.variants.filter((_, i) => i !== idx)})}>
+                                            <div key={idx} className="variant-row-compact" style={{ cursor: 'pointer' }} onClick={() => handleOpenEditTier(idx)}>
+                                                <span className="tier-readonly">{v.name}</span>
+                                                <span className="tier-readonly">{v.quantity}</span>
+                                                <span className="tier-readonly">${Number(v.price).toFixed(2)}</span>
+                                                <button type="button" className="btn-del-tier" onClick={e => { e.stopPropagation(); setFormData({...formData, variants: formData.variants.filter((_, i) => i !== idx)}) }}>
                                                     <Trash2 size={12} />
                                                 </button>
                                             </div>
@@ -536,6 +560,80 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     </form>
 
                     <AnimatePresence>
+                        {showTierModal && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="modal-overlay"
+                                style={{ zIndex: 4000 }}
+                                onClick={() => setShowTierModal(false)}
+                            >
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.9 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    className="tier-mini-modal"
+                                    onClick={e => e.stopPropagation()}
+                                >
+                                    <header className="tier-mini-header">
+                                        <Layers size={20} />
+                                        <h3>{editingTierIndex !== null ? 'Editar Tier' : 'Nuevo Tier'}</h3>
+                                        <button className="btn-close" onClick={() => setShowTierModal(false)}>
+                                            <X size={20} />
+                                        </button>
+                                    </header>
+                                    <div className="tier-mini-body">
+                                        <div className="field">
+                                            <label>Unidad / Nombre</label>
+                                            <input
+                                                type="text"
+                                                autoFocus
+                                                placeholder="EJ: UNIDAD, CAJA X 6, PAR"
+                                                value={tierForm.name}
+                                                onChange={e => setTierForm({ ...tierForm, name: e.target.value.toUpperCase() })}
+                                            />
+                                        </div>
+                                        <div className="tier-mini-row">
+                                            <div className="field">
+                                                <label>Cantidad</label>
+                                                <input
+                                                    type="number"
+                                                    placeholder="1"
+                                                    value={tierForm.quantity}
+                                                    onChange={e => setTierForm({ ...tierForm, quantity: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="field">
+                                                <label>Precio</label>
+                                                <div className="input-with-icon">
+                                                    <DollarSign size={16} />
+                                                    <input
+                                                        type="number" step="0.01"
+                                                        placeholder="0.00"
+                                                        value={tierForm.price}
+                                                        onChange={e => setTierForm({ ...tierForm, price: e.target.value })}
+                                                        onBlur={e => {
+                                                            const val = parseFloat(e.target.value);
+                                                            if (!isNaN(val)) setTierForm({ ...tierForm, price: val.toFixed(2) });
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <footer className="tier-mini-footer">
+                                        <button type="button" className="btn-cancel" onClick={() => setShowTierModal(false)}>
+                                            Cancelar
+                                        </button>
+                                        <button type="button" className="btn-save" onClick={handleSaveTier}>
+                                            <Check size={16} /> {editingTierIndex !== null ? 'Actualizar' : 'Agregar'}
+                                        </button>
+                                    </footer>
+                                </motion.div>
+                            </motion.div>
+                        )}
+
                         {activeKeyboard === 'qwerty' && (
                             <VirtualKeyboard 
                                 value={
@@ -665,6 +763,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         .compact-toggle.active-pink { background: rgba(236, 72, 153, 0.15); border-color: #ec4899; }
                         .compact-toggle.active-pink svg { color: #ec4899; }
                         .compact-toggle.active-pink span { color: #ec4899; }
+                        .compact-toggle.active-sky { background: rgba(14, 165, 233, 0.15); border-color: #0ea5e9; }
+                        .compact-toggle.active-sky svg { color: #0ea5e9; }
+                        .compact-toggle.active-sky span { color: #0ea5e9; }
 
                         .stock-pricing-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 0.6rem; }
                         .stock-pricing-grid .field input { height: clamp(38px, 4.2vh, 44px); box-sizing: border-box; }
@@ -692,7 +793,29 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         .variant-row-compact { display: grid; grid-template-columns: 1.5fr 1fr 1.2fr 30px; gap: 0.4rem; margin-bottom: 0.4rem; }
                         .variant-row-compact input { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
                         .btn-del-tier { background: none; border: none; color: #ef4444; cursor: pointer; opacity: 0.6; }
-                        
+                        .tier-readonly { font-size: 0.8rem; font-weight: 700; color: #e2e8f0; padding: 0.4rem 0.6rem; display: block; }
+
+                        .tier-mini-modal {
+                            background: #1e293b; border-radius: 20px; border: 1px solid #334155;
+                            width: min(420px, 90vw); overflow: hidden;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                        }
+                        .tier-mini-header {
+                            display: flex; align-items: center; gap: 0.75rem;
+                            padding: 0.75rem 1.25rem; border-bottom: 1px solid #334155;
+                        }
+                        .tier-mini-header h3 { font-size: 1rem; font-weight: 800; color: white; margin: 0; flex: 1; }
+                        .tier-mini-header .btn-close { margin-left: auto; }
+                        .tier-mini-body {
+                            padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem;
+                        }
+                        .tier-mini-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+                        .tier-mini-footer {
+                            display: flex; justify-content: flex-end; gap: 0.75rem;
+                            padding: 0.75rem 1.25rem; border-top: 1px solid #334155;
+                        }
+                        .tier-mini-footer .btn-save { padding: 0.45rem 1.25rem; font-size: 0.8rem; }
+
                         .modern-textarea { 
                             width: 100%; min-height: clamp(60px, 8vh, 100px); font-size: 0.8rem; 
                             background: #0f172a; border: 1px solid #334155; border-radius: 12px;

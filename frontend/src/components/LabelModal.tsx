@@ -24,7 +24,7 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
             }}>
                 {fields.includes('businessName') && (
                     <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11pt', marginBottom: '2mm', textTransform: 'uppercase' }}>
-                        {businessConfig.businessName || 'LuckyPOS'}
+{businessConfig.businessName || 'Mi Negocio'}
                     </div>
                 )}
 
@@ -101,7 +101,7 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
 
                 <div style={{ borderTop: '1px solid #999', margin: '2mm 0 1mm' }} />
                 <div style={{ textAlign: 'center', fontSize: '7pt', color: '#666' }}>
-                    {businessConfig.businessName || 'LuckyPOS'} · {businessConfig.phone || ''}
+                    {businessConfig.businessName || 'Mi Negocio'} · {businessConfig.phone || ''}
                 </div>
             </div>
         );

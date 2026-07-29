@@ -130,12 +130,41 @@ async function main() {
         { key: 'settings', label: 'Configuración', enabled: false },
         { key: 'audit', label: 'Auditoría', enabled: false },
         { key: 'transfers', label: 'Traslados', enabled: false },
-        { key: 'projections', label: 'Proyecciones', enabled: false }
+        { key: 'projections', label: 'Proyecciones', enabled: false },
+        { key: 'lookup', label: 'Consultar', enabled: true }
     ];
+    const defaultDashboardConfig = [
+        { key: 'pos', label: 'Punto de Venta' },
+        { key: 'summary', label: 'Resumen Día' },
+        { key: 'inventory', label: 'Inventario' },
+        { key: 'replenishment', label: 'Reposición' },
+        { key: 'products', label: 'Productos' },
+        { key: 'clients', label: 'Clientes' },
+        { key: 'expenses', label: 'Gastos' },
+        { key: 'history', label: 'Historial Ventas' },
+        { key: 'projections', label: 'Proyecciones' },
+        { key: 'reports', label: 'Reportes' },
+        { key: 'receivable', label: 'Cuentas por Cobrar' },
+        { key: 'payable', label: 'Cuentas por Pagar' },
+        { key: 'transfers', label: 'Traslados' },
+        { key: 'closings', label: 'Cortes de Caja' },
+        { key: 'categories', label: 'Categorías' },
+        { key: 'suppliers', label: 'Proveedores' },
+        { key: 'branches', label: 'Sucursales' },
+        { key: 'users', label: 'Personal' },
+        { key: 'settings', label: 'Configuración' },
+        { key: 'audit', label: 'Auditoría' },
+        { key: 'shipments', label: 'Envíos' },
+        { key: 'lookup', label: 'Consultar' }
+    ];
+    const combinedConfig = {
+        sidebar: defaultSidebarConfig,
+        dashboard: defaultDashboardConfig
+    };
     await prisma.masterConfig.upsert({
         where: { id: 1 },
-        update: { sidebarConfig: JSON.stringify(defaultSidebarConfig) },
-        create: { id: 1, businessName: 'LuckyPOS', autoClosingTime: '23:59', sidebarConfig: JSON.stringify(defaultSidebarConfig) }
+        update: { sidebarConfig: JSON.stringify(combinedConfig) },
+        create: { id: 1, businessName: 'LuckyPOS', autoClosingTime: '23:59', sidebarConfig: JSON.stringify(combinedConfig) }
     });
 
     console.log('✅ Default config created.');

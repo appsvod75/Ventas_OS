@@ -12,6 +12,9 @@ interface CartItem {
     notes?: string;
     is_service?: boolean;
     hasCustomization?: boolean;
+    allowPriceChange?: boolean;
+    customPrice?: number;
+    customData?: any;
 }
 
 interface CartContextType {
@@ -21,6 +24,8 @@ interface CartContextType {
     updateQuantity: (cartItemId: string, qty: number) => void;
     updateItemVariant: (cartItemId: string, newVariant: any) => void;
     updateItemNotes: (cartItemId: string, notes: string) => void;
+    updateCustomPrice: (cartItemId: string, price: number) => void;
+    updateCustomData: (cartItemId: string, data: any) => void;
     clearCart: () => void;
     subtotal: number;
     total: number;
@@ -38,7 +43,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setCart(prev => {
             const variantId = variant ? (variant.name || variant.id) : 'BASE';
             const cartItemId = `${product.id}-${variantId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
-            return [{ ...product, cartItemId, quantity: 1, selectedVariant: variant }, ...prev];
+            return [{ ...product, cartItemId, quantity: 1, selectedVariant: variant, allowPriceChange: !!product.allowPriceChange }, ...prev];
         });
     };
 
@@ -74,6 +79,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ));
     };
 
+    const updateCustomPrice = (cartItemId: string, price: number) => {
+        setCart(prev => prev.map(item =>
+            item.cartItemId === cartItemId ? { ...item, customPrice: price } : item
+        ));
+    };
+
+    const updateCustomData = (cartItemId: string, data: any) => {
+        setCart(prev => prev.map(item =>
+            item.cartItemId === cartItemId ? { ...item, customData: data } : item
+        ));
+    };
+
     const clearCart = () => {
         setCart([]);
         setShippingCost(0);
@@ -83,7 +100,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const calculateTotals = () => {
         let subtotal = 0;
         cart.forEach(item => {
-            let unitPrice = item.selectedVariant ? item.selectedVariant.price : item.base_price;
+            let unitPrice = item.customPrice !== undefined ? item.customPrice :
+                item.selectedVariant ? item.selectedVariant.price : item.base_price;
             subtotal += unitPrice * item.quantity;
         });
         return { subtotal, total: subtotal + shippingCost };
@@ -92,7 +110,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { subtotal, total } = calculateTotals();
 
     return (
-        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, updateItemVariant, updateItemNotes, clearCart, subtotal, total, shippingCost, setShippingCost }}>
+        <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQuantity, updateItemVariant, updateItemNotes, updateCustomPrice, updateCustomData, clearCart, subtotal, total, shippingCost, setShippingCost }}>
             {children}
         </CartContext.Provider>
     );

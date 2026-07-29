@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   ShoppingCart, LayoutDashboard, Package, RefreshCw, ClipboardList, LogOut, Layers, History,
   Users, User, Receipt, Archive, Activity, TrendingUp, Wallet, Truck, Settings as SettingsIcon, ShieldCheck, MapPin,
-  BarChart3, LineChart, Eye, Tags, Store, Building2, Banknote
+  BarChart3, LineChart, Eye, Tags, Store, Building2, Banknote, Search
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { configApi } from '../services/api';
@@ -31,7 +31,9 @@ const Sidebar: React.FC = () => {
           const config = typeof res.data.sidebarConfig === 'string'
             ? JSON.parse(res.data.sidebarConfig)
             : res.data.sidebarConfig;
-          setSidebarConfig(Array.isArray(config) ? config : []);
+          // Nuevo formato: { sidebar: [...], dashboard: [...] } o array plano antiguo
+          const items = Array.isArray(config) ? config : (config?.sidebar || []);
+          setSidebarConfig(items);
         }
       } catch (error) {
         console.error('Error fetching config', error);
@@ -77,25 +79,31 @@ const Sidebar: React.FC = () => {
     transfers: { icon: <Truck />, label: 'Traslados', path: '/transfers' },
     admin: { icon: <LayoutDashboard />, label: 'Dashboard', path: '/admin' },
     audit: { icon: <Activity />, label: 'Auditoría', path: '/audit' },
+    lookup: { icon: <Search />, label: 'Consultar', path: '/lookup' },
   };
 
-  // Only show items from the config; if no config yet, show nothing until admin saves in Settings
+  // Build menu from config, appending future items not yet in config
   let menuItems: any[] = [];
 
-  if (sidebarConfig && sidebarConfig.length > 0) {
-    menuItems = sidebarConfig
+  const visibleFromConfig = (sidebarConfig && sidebarConfig.length > 0)
+    ? sidebarConfig
       .map(conf => {
         const baseItem = allPossibleItems[conf.key];
         if (!baseItem || conf.enabled === false || conf.enabled === "false") return null;
-        
         if ((conf.key === 'settings' || conf.key === 'users') && !isAdmin) return null;
-        
         if (conf.key === 'audit' && !hasRole(ROLES.SUPER_ADMIN)) return null;
-        
         return baseItem;
       })
-      .filter(Boolean);
-  }
+      .filter(Boolean)
+    : [];
+
+  // Future items: de allPossibleItems, los que no están en sidebarConfig, agregar al final
+  const configKeys = new Set((sidebarConfig || []).map((c: any) => c.key));
+  const futureItems = Object.entries(allPossibleItems)
+    .filter(([key]) => !configKeys.has(key))
+    .map(([, item]) => item);
+
+  menuItems = [...visibleFromConfig, ...futureItems];
 
   const branchColor = user.color_hex || '#3b82f6';
 
@@ -112,7 +120,7 @@ const Sidebar: React.FC = () => {
               )
             )}
           </div>
-          <span>{!isLoading && (businessName || 'LuckyPOS')}</span>
+          <span>{!isLoading && (businessName || 'Mi Negocio')}</span>
         </Link>
       </div>
 

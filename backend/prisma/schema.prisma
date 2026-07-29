@@ -63,7 +63,8 @@ model User {
   auditLogs      AuditLog[]
   clientPayments ClientPayment[]
   expenses       Expense[]
-  sales          SaleH[]
+  sales          SaleH[]      @relation("UserSales")
+  reversedSales  SaleH[]      @relation("ReversedSales")
   transfers      Transfer[]
   purchases      PurchaseH[]
   branch         Branch?         @relation(fields: [branchId], references: [id])
@@ -91,6 +92,7 @@ model Product {
   isService       Boolean           @default(false)
   isActive        Boolean           @default(true)
   hasCustomization Boolean          @default(false)
+  allowPriceChange Boolean          @default(false)
   commissionType  String?
   commissionValue Float             @default(0)
   createdAt       DateTime          @default(now())
@@ -204,40 +206,45 @@ model Client {
 }
 
 model SaleH {
-  id                  Int                  @id @default(autoincrement())
-  branchId            Int
-  userId              Int
-  total               Float
-  tax                 Float                @default(0)
-  discount            Float                @default(0)
-  shipping            Float                @default(0)
-  paymentMethod       String               @default("CASH")
-  balance             Float                @default(0)
-  amountTendered      Float?
-  change              Float?
-  createdAt           DateTime             @default(now())
-  clientId            Int?                 @default(1)
-  dueDate             DateTime?
-  shippingDate        DateTime?
-  deliveryDate        DateTime?
-  fulfillmentStatus   String                @default("VENDIDO")
-  paymentApplications PaymentApplication[]
-  details             SaleD[]
-  user                User                 @relation(fields: [userId], references: [id])
-  branch              Branch               @relation(fields: [branchId], references: [id])
-  client              Client?              @relation(fields: [clientId], references: [id])
+    id                  Int                  @id @default(autoincrement())
+    branchId            Int
+    userId              Int
+    total               Float
+    tax                 Float                @default(0)
+    discount            Float                @default(0)
+    shipping            Float                @default(0)
+    paymentMethod       String               @default("CASH")
+    balance             Float                @default(0)
+    amountTendered      Float?
+    change              Float?
+    createdAt           DateTime             @default(now())
+    clientId            Int?                 @default(1)
+    dueDate             DateTime?
+    shippingDate        DateTime?
+    deliveryDate        DateTime?
+    fulfillmentStatus   String                @default("VENDIDO")
+    reversedAt          DateTime?
+    reversalReason      String?
+    reversedById        Int?
+    paymentApplications PaymentApplication[]
+    details             SaleD[]
+    user                User                 @relation("UserSales", fields: [userId], references: [id])
+    branch              Branch               @relation(fields: [branchId], references: [id])
+    client              Client?              @relation(fields: [clientId], references: [id])
+    reversedBy          User?                @relation("ReversedSales", fields: [reversedById], references: [id])
 }
 
 model SaleD {
-  id        Int     @id @default(autoincrement())
-  saleHId   Int
-  productId Int
-  quantity  Int
-  unitPrice Float
-  subtotal  Float
-  notes     String?
-  saleH     SaleH   @relation(fields: [saleHId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
+  id         Int     @id @default(autoincrement())
+  saleHId    Int
+  productId  Int
+  quantity   Int
+  unitPrice  Float
+  subtotal   Float
+  notes      String?
+  customData String?
+  saleH      SaleH   @relation(fields: [saleHId], references: [id], onDelete: Cascade)
+  product    Product @relation(fields: [productId], references: [id])
 }
 
 model Transfer {

@@ -49,7 +49,8 @@ const createSale = async (req, res) => {
                     quantity: item.quantity,
                     unitPrice: unitPrice,
                     subtotal: subtotal,
-                    notes: item.notes || null
+                    notes: item.notes || null,
+                    customData: item.customData || null
                 });
 
                 // Update Inventory (ONLY if NOT a service)
@@ -568,4 +569,112 @@ const updateFulfillmentStatus = async (req, res) => {
     }
 };
 
-module.exports = { createSale, getAccountsReceivable, getSalesHistory, getSaleById, payAccountReceivable, getClientPayments, updateSale, getShipments, updateFulfillmentStatus, updateDeliveryDate };
+const reverseSale = async (req, res) => {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const { reason, includeShipping } = req.body;
+
+    if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: 'El motivo de reversión es requerido' });
+    }
+
+    try {
+        const result = await prisma.$transaction(async (tx) => {
+            const sale = await tx.saleH.findUnique({
+                where: { id: parseInt(id) },
+                include: {
+                    details: { include: { product: true } },
+                    branch: { select: { name: true, id: true } }
+                }
+            });
+
+            if (!sale) throw new Error('Venta no encontrada');
+            if (sale.reversedAt) throw new Error('Esta venta ya fue revertida');
+
+            // 1. Regresar inventario (solo productos, no servicios)
+            for (const detail of sale.details) {
+                if (!detail.product.isService) {
+                    await tx.inventory.update({
+                        where: {
+                            branchId_productId: {
+                                branchId: sale.branchId,
+                                productId: detail.productId
+                            }
+                        },
+                        data: { stockLevel: { increment: detail.quantity } }
+                    });
+                }
+            }
+
+            // 2. Crear gasto por reembolso si pagó en efectivo
+            const paidInCash = sale.paymentMethod === 'CASH' || sale.paymentMethod?.includes('EFECTIVO');
+            if (paidInCash) {
+                const cashPaid = (sale.amountTendered || 0) - (sale.change || 0);
+                if (cashPaid > 0) {
+                    await tx.expense.create({
+                        data: {
+                            branchId: sale.branchId,
+                            userId,
+                            description: `REVERSIÓN Venta #${sale.id} - Reembolso efectivo: ${reason}`,
+                            amount: cashPaid,
+                            createdAt: new Date()
+                        }
+                    });
+                }
+            }
+
+            // 3. Crear gasto por envío si aplica
+            if (includeShipping && sale.shipping > 0) {
+                await tx.expense.create({
+                    data: {
+                        branchId: sale.branchId,
+                        userId,
+                        description: `REVERSIÓN Venta #${sale.id} - Envío`,
+                        amount: sale.shipping,
+                        createdAt: new Date()
+                    }
+                });
+            }
+
+            // 4. Cancelar balance pendiente (crédito / pago parcial)
+            if (sale.balance > 0) {
+                await tx.saleH.update({
+                    where: { id: sale.id },
+                    data: { balance: 0 }
+                });
+            }
+
+            // 5. Marcar venta como revertida
+            const updated = await tx.saleH.update({
+                where: { id: sale.id },
+                data: {
+                    reversedAt: new Date(),
+                    reversalReason: reason,
+                    reversedById: userId,
+                    fulfillmentStatus: 'REVERTIDA'
+                }
+            });
+
+            await logAudit(userId, 'REVERSE_SALE', {
+                saleId: sale.id,
+                reason,
+                includeShipping,
+                invoiceNumber: sale.id,
+                total: sale.total
+            }, sale.branchId);
+
+            return updated;
+        }, { timeout: 15000 });
+
+        const io = getIO();
+        io?.emit('sale_reversed', { saleId: parseInt(id) });
+
+        res.json({ message: 'Venta revertida exitosamente', sale: result });
+    } catch (error) {
+        console.error('Error reversing sale:', error);
+        res.status(500).json({ message: error.message || 'Error al revertir la venta' });
+    }
+};
+
+module.exports = { createSale, getAccountsReceivable, getSalesHistory, getSaleById, payAccountReceivable, getClientPayments, updateSale, getShipments, updateFulfillmentStatus, updateDeliveryDate, reverseSale };

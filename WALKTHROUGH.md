@@ -51,47 +51,65 @@ Esto genera:
 
 ## 3. Despliegue a VPS
 
-Todos los comandos se ejecutan desde la **raíz del proyecto** (`~/proyectos/Ventas_OS$`).
+> ⚠️ **REGLAS DE ORO (NO VOLAR DATOS)**
+> 1. **NUNCA** subir `backend/prisma/misventas.db` — es la base de datos en producción
+> 2. **NUNCA** subir `backend/.env` — cada entorno tiene su configuración
+> 3. **NUNCA** ejecutar `npm run seed` en VPS con datos reales — solo para DB nueva
+> 4. **SIEMPRE** incluir `--exclude='prisma/misventas.db'` y `--exclude='.env'` en rsync
+> 5. **SIEMPRE** verificar que `ALLOWED_ORIGINS` en `.env` incluya el dominio producción
+
+Todos los comandos se ejecutan desde la **raíz del proyecto** (`/home/renosa/Documentos/mis_apps/Ventas_OS/`).
 
 ### Subir frontend (build + rsync)
 ```bash
-cd frontend && npm run build && rsync -avz dist/ root@64.23.176.98:/var/www/ventasee-os/dist/ && cd ..
+cd /home/renosa/Documentos/mis_apps/Ventas_OS/frontend
+npm run build
+rsync -avz dist/ root@64.23.176.98:/var/www/ventasee-os/frontend/dist/
 ```
 
-### Subir backend (solo archivos modificados)
+### Subir backend completo (archivos modificados, SIN base ni .env)
 ```bash
-rsync -avz backend/server.js root@64.23.176.98:/var/www/ventasee-os/backend/
+cd /home/renosa/Documentos/mis_apps/Ventas_OS
+rsync -avz \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='.env' \
+  --exclude='prisma/misventas.db' \
+  --exclude='prisma/misventas.db-journal' \
+  --exclude='prisma/misventas.db-wal' \
+  --exclude='prisma/misventas.db-shm' \
+  backend/ root@64.23.176.98:/var/www/ventasee-os/backend/
 ```
 
-### Subir backend completo (sin node_modules)
+### Subir solo archivos específicos del backend (más seguro)
 ```bash
-rsync -avz --exclude='node_modules' --exclude='.git' backend/ root@64.23.176.98:/var/www/ventasee-os/backend/
+cd /home/renosa/Documentos/mis_apps/Ventas_OS/backend
+rsync -avz \
+  controllers/ routes/ prisma/schema.prisma prisma/seed.js server.js \
+  root@64.23.176.98:/var/www/ventasee-os/backend/
 ```
 
-### Subir todo + reiniciar servicio
+### En el VPS (solo `db push`, NUNCA seed si hay datos)
 ```bash
-cd frontend && npm run build && rsync -avz dist/ root@64.23.176.98:/var/www/ventasee-os/dist/ && cd .. && rsync -avz backend/server.js root@64.23.176.98:/var/www/ventasee-os/backend/ && ssh root@64.23.176.98 "pm2 restart ventasee-os"
-```
-
-### En el VPS (primera vez o cambios en dependencias/DB)
-```bash
+ssh root@64.23.176.98
 cd /var/www/ventasee-os/backend
 
-# Instalar dependencias
+# Si hay nuevos paquetes
 npm install --production
 
-# Generar Prisma client
+# Regenerar Prisma Client (si cambió schema)
 npx prisma generate
 
-# Sincronizar DB (si hay cambios en schema)
+# SOLO agregar columnas nuevas (NO borra datos)
 npx prisma db push
 
-# Solo si es una DB nueva
-npm run seed
+# 🚫 NO ejecutar npm run seed — solo para DB nueva
+# 🚫 NO subir misventas.db — sobrescribe la producción
+# 🚫 NO subir .env — cada entorno tiene el suyo
+# ⚠️ Verificar ALLOWED_ORIGINS incluye https://minegocio.luckyapps.online
 
-# Iniciar con PM2
-pm2 start server.js --name ventasee-os
-pm2 save
+pm2 restart ventasee-os
+exit
 ```
 
 ### Nginx (sitio nuevo)

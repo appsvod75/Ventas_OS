@@ -188,8 +188,7 @@ const getProductById = async (req, res) => {
 };
 
 const createProduct = async (req, res) => {
-    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, commissionType, commissionValue, hasCustomization } = req.body;
-    console.log('--- DEBUG: createProduct Body ---', JSON.stringify(req.body, null, 2));
+    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, commissionType, commissionValue, hasCustomization, allowPriceChange } = req.body;
     console.log('--- DEBUG: User Branch ID ---', req.user.branch_id);
     
     try {
@@ -203,6 +202,7 @@ const createProduct = async (req, res) => {
                 basePrice: parseFloat(basePrice || 0),
                 isService: !!isService,
                 hasCustomization: !!hasCustomization,
+                allowPriceChange: !!allowPriceChange,
                 description: description || undefined,
                 imageUrl: imageUrl || undefined,
                 commissionType: commissionType || null,
@@ -264,7 +264,7 @@ const createProduct = async (req, res) => {
 
 const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, isActive, commissionType, commissionValue, hasCustomization } = req.body;
+    const { name, sku, categoryId, basePrice, isMedicine, isService, description, imageUrl, variants, minStock, maxStock, providerIds, isActive, commissionType, commissionValue, hasCustomization, allowPriceChange } = req.body;
     try {
         const product = await prisma.$transaction(async (tx) => {
             // Delete old variants
@@ -287,6 +287,7 @@ const updateProduct = async (req, res) => {
                     basePrice: parseFloat(basePrice || 0),
                     isService: !!isService,
                     hasCustomization: hasCustomization !== undefined ? !!hasCustomization : undefined,
+                    allowPriceChange: allowPriceChange !== undefined ? !!allowPriceChange : undefined,
                     description: description || undefined,
                     imageUrl: imageUrl || undefined,
                     ...(isActive !== undefined ? { isActive } : {}),
@@ -434,8 +435,42 @@ const deleteProductPermanent = async (req, res) => {
     }
 };
 
+const searchProducts = async (req, res) => {
+    const { q } = req.query;
+    if (!q || q.trim().length < 1) {
+        return res.status(400).json({ message: 'Ingrese al menos 1 carácter' });
+    }
+
+    try {
+        const query = q.trim();
+        const products = await prisma.product.findMany({
+            where: {
+                isActive: true,
+                OR: [
+                    { name: { contains: query } },
+                    { sku: { contains: query } }
+                ]
+            },
+            include: {
+                category: { select: { name: true, colorHex: true } },
+                variants: { orderBy: { quantity: 'asc' } },
+                inventory: {
+                    select: { branchId: true, stockLevel: true, branch: { select: { name: true } } }
+                }
+            },
+            orderBy: { name: 'asc' },
+            take: 20
+        });
+
+        res.json(products);
+    } catch (error) {
+        console.error('Error searching products:', error);
+        res.status(500).json({ message: 'Error al buscar productos' });
+    }
+};
+
 module.exports = { 
     getAllCategories, createCategory, updateCategory, deleteCategory, restoreCategory, 
     getAllProducts, getProductById, createProduct, updateProduct, deleteProduct, restoreProduct,
-    deleteProductPermanent 
+    deleteProductPermanent, searchProducts 
 };

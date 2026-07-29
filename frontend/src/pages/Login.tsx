@@ -12,7 +12,7 @@ const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [lockout, setLockout] = useState(0);
     const [logoUrl, setLogoUrl] = useState<string | null>(null);
-    const [businessName, setBusinessName] = useState('LuckyPOS');
+    const [businessName, setBusinessName] = useState('Mi Negocio');
     const [isLoadingLogo, setIsLoadingLogo] = useState(true);
     const [showKeyboard, setShowKeyboard] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);

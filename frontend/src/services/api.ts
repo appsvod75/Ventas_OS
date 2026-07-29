@@ -18,6 +18,7 @@ export const authApi = {
 
 export const productApi = {
     getProducts: (branchId?: number, showInactive?: boolean) => api.get('/products', { params: { branch_id: branchId, show_inactive: showInactive } }),
+    searchProducts: (q: string) => api.get('/products/search', { params: { q } }),
     getCategories: (showInactive?: boolean) => api.get('/products/categories', { params: { showInactive } }),
     createCategory: (data: { name: string, icon?: string, colorHex?: string }) => api.post('/products/categories', data),
     updateCategory: (id: number, data: { name: string, icon?: string, colorHex?: string }) => api.put(`/products/categories/${id}`, data),
@@ -98,7 +99,8 @@ export const saleApi = {
     getSaleById: (id: number) => api.get(`/sales/${id}`),
     updateSale: (id: number, data: any) => api.put(`/sales/${id}`, data),
     payAccountReceivable: (id: number, amount: number) => api.post(`/sales/${id}/pay`, { amount }),
-    getClientPayments: (id: number) => api.get(`/sales/${id}/payments`)
+    getClientPayments: (id: number) => api.get(`/sales/${id}/payments`),
+    reverseSale: (id: number, data: { reason: string; includeShipping: boolean }) => api.post(`/sales/${id}/reverse`, data)
 };
 
 export const auditApi = {

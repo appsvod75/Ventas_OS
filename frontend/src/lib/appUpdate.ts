@@ -68,7 +68,7 @@ export async function applyAppUpdate(serverVersion?: string): Promise<void> {
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:lky-spin .8s linear infinite;margin:0 auto 12px;display:block">
                 <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
             </svg>
-            <p style="color:#f8fafc;font-size:14px;font-weight:800;letter-spacing:0.05em;margin:0">Actualizando LuckyPOS...</p>
+            <p style="color:#f8fafc;font-size:14px;font-weight:800;letter-spacing:0.05em;margin:0">Actualizando...</p>
             <p style="color:#64748b;font-size:11px;font-weight:600;margin:6px 0 0">Espere un momento</p>
         </div>
         <style>@keyframes lky-spin{to{transform:rotate(360deg)}}</style>

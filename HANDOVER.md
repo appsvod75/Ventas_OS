@@ -129,6 +129,49 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 ## Despliegue en Producción (VPS)
 Ver `WALKTHROUGH.md` para el flujo completo.
 
+### ⚠️ CRÍTICO — No volar datos
+
+| Qué | Hacer | No hacer |
+|-----|-------|----------|
+| `backend/prisma/misventas.db` | **Excluir siempre** del rsync | Subir tu DB local al VPS |
+| `backend/.env` | **Excluir siempre** del rsync | El `.env` del VPS tiene config propia |
+| `npm run seed` | Solo en DB nueva/vacía | Ejecutar en DB con datos reales |
+| `npx prisma db push` | ✅ Seguro, solo agrega columnas | Nunca borra datos |
+| `ALLOWED_ORIGINS` en `.env` | Incluir dominio producción: `https://minegocio.luckyapps.online` | Dejar solo `localhost` |
+
+### Errores comunes y solución
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| `CORS not allowed` | `.env` no incluye el dominio | Agregar a `ALLOWED_ORIGINS` |
+| `EADDRINUSE` | Puerto ocupado por otra app | Cambiar `PORT` en `.env` |
+| `500 Internal Server Error` al login | CORS bloquea la petición | Revisar `ALLOWED_ORIGINS` |
+| `Prod: 0` en VPS | La DB local sobrescribió la del VPS | Restaurar backup o subir `.db` correcto |
+| Login no válido | DB local reemplazó usuarios del VPS | Usar PIN del seed: `020518` |
+
+### Rutas exactas en VPS
+- Frontend estático: `/var/www/ventasee-os/frontend/dist/`
+- Backend: `/var/www/ventasee-os/backend/`
+- DB: `/var/www/ventasee-os/backend/prisma/misventas.db` (🛑 NO TOCAR)
+- `.env`: `/var/www/ventasee-os/backend/.env` (🛑 NO TOCAR)
+- PM2 service name: `ventasee-os`
+- Puerto backend: `3019`
+- URL producción: `https://minegocio.luckyapps.online`
+
+### Comando seguro para subir backend (copiar textual)
+```bash
+rsync -avz \
+  --exclude='node_modules' \
+  --exclude='.git' \
+  --exclude='.env' \
+  --exclude='prisma/misventas.db' \
+  --exclude='prisma/misventas.db-journal' \
+  --exclude='prisma/misventas.db-wal' \
+  --exclude='prisma/misventas.db-shm' \
+  /ruta/local/Ventas_OS/backend/ \
+  root@64.23.176.98:/var/www/ventasee-os/backend/
+```
+
 ### ⚠️ Regla crítica: BD local vs VPS
 - **Nunca** subir `misventas.db` local al VPS. La base de producción tiene datos reales.
 - Los cambios de esquema se aplican vía `npx prisma db push` directamente en el VPS.

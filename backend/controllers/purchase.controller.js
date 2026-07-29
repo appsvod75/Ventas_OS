@@ -165,7 +165,7 @@ const getPurchaseById = async (req, res) => {
                 provider: true,
                 branch: true,
                 user: { select: { name: true } },
-                details: { include: { product: { select: { name: true, sku: true } } } }
+                details: { include: { product: { select: { name: true, sku: true, averageCost: true } } } }
             }
         });
         if (!purchase) return res.status(404).json({ message: 'Compra no encontrada' });

@@ -114,7 +114,7 @@ const Ticket = forwardRef<HTMLDivElement, TicketProps>(({ sale, businessConfig }
             `}</style>
 
             <header className="ticket-header">
-                <div className="ticket-business-name">{businessConfig.businessName || 'LuckyPOS'}</div>
+                <div className="ticket-business-name">{businessConfig.businessName || 'Mi Negocio'}</div>
                 <div className="ticket-address">{businessConfig.address || 'San Salvador, El Salvador'}</div>
                 <div className="ticket-phone">Tel: {businessConfig.phone || '0000-0000'}</div>
                 <div className="ticket-divider" />

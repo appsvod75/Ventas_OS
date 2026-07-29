@@ -11,6 +11,7 @@ router.delete('/categories/:id', authMiddleware, requirePermission(PERMISSIONS.C
 router.patch('/categories/:id/restore', authMiddleware, requirePermission(PERMISSIONS.CATEGORIES_MANAGE), restoreCategory);
 
 router.get('/', authMiddleware, getAllProducts);
+router.get('/search', authMiddleware, require('../controllers/product.controller').searchProducts);
 router.get('/:id', authMiddleware, getProductById);
 router.post('/', authMiddleware, requirePermission(PERMISSIONS.PRODUCTS_CREATE), createProduct);
 router.put('/:id', authMiddleware, requirePermission(PERMISSIONS.PRODUCTS_EDIT), updateProduct);

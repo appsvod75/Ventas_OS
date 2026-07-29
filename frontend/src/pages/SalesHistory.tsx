@@ -18,6 +18,12 @@ interface SaleRecord {
     change?: number | null;
     paymentMethod: string;
     createdAt: string;
+    reversedAt?: string | null;
+    shipping: number;
+    fulfillmentStatus: string;
+    balance: number;
+    dueDate?: string | null;
+    shippingDate?: string | null;
     branch: { name: string };
     user: { name: string };
     client?: { name: string; phone: string };
@@ -46,6 +52,10 @@ const SalesHistory: React.FC = () => {
     const [activeEditIdx, setActiveEditIdx] = useState<number | null>(null);
     const user = getUser();
     const [config, setConfig] = useState<any>(null);
+    const [showReverseModal, setShowReverseModal] = useState(false);
+    const [reversalReason, setReversalReason] = useState('');
+    const [includeShipping, setIncludeShipping] = useState(false);
+    const [isReversing, setIsReversing] = useState(false);
     const [productSearch, setProductSearch] = useState('');
     const [foundProducts, setFoundProducts] = useState<any[]>([]);
     const [isSearchingProducts, setIsSearchingProducts] = useState(false);
@@ -318,8 +328,9 @@ const SalesHistory: React.FC = () => {
                                                     {sale.paymentMethod}
                                                 </span>
                                             </td>
-                                            <td className="text-right font-bold amounts text-emerald-400">
-                                                {formatCurrency(sale.total)}
+                                            <td className="text-right font-bold amounts" style={{ color: sale.reversedAt ? '#ef4444' : '#34d399' }}>
+                                                {formatCurrency((sale.total || 0) + (sale.shipping || 0))}
+                                                {sale.reversedAt && <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase' }}>ANULADA</div>}
                                             </td>
                                             <td className="text-center">
                                                 <button className="action-btn" onClick={() => setSelectedSale(sale)}>
@@ -356,7 +367,11 @@ const SalesHistory: React.FC = () => {
                     <div className="modal-content large" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div>
-                                <h2>Detalle de Venta #{selectedSale.id}</h2>
+                                <h2>Detalle de Venta #{selectedSale.id}
+                                    {selectedSale.reversedAt && (
+                                        <span style={{ marginLeft: '0.75rem', fontSize: '0.7rem', background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '6px', fontWeight: 800, verticalAlign: 'middle' }}>ANULADA</span>
+                                    )}
+                                </h2>
                                 <div className="text-sm text-slate-400">
                                     {isEditing ? (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '4px' }}>
@@ -387,6 +402,19 @@ const SalesHistory: React.FC = () => {
                                         }}
                                     >
                                         <Filter size={18} /> Editar Venta
+                                    </button>
+                                )}
+                                {(hasRole(ROLES.SUPER_ADMIN, ROLES.ADMIN) && !isEditing && !selectedSale.reversedAt) && (
+                                    <button 
+                                        className="btn-reverse-sale" 
+                                        onClick={() => {
+                                            const ship = selectedSale.shipping > 0 && (selectedSale.fulfillmentStatus === 'DESPACHADO' || selectedSale.fulfillmentStatus === 'ENTREGADO');
+                                            setIncludeShipping(ship);
+                                            setReversalReason('');
+                                            setShowReverseModal(true);
+                                        }}
+                                    >
+                                        <XCircle size={18} /> Anular
                                     </button>
                                 )}
                                 {isEditing && (
@@ -580,20 +608,63 @@ const SalesHistory: React.FC = () => {
                                     ))}
                                 </tbody>
                                 <tfoot>
+                                    {!isEditing && (
+                                        <>
+                                            <tr>
+                                                <td colSpan={2} className="text-right text-slate-400" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.75rem' }}>Subtotal:</td>
+                                                <td className="text-right amounts text-slate-400" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.75rem' }}>
+                                                    {formatCurrency(selectedSale.total)}
+                                                </td>
+                                            </tr>
+                                            {selectedSale.shipping > 0 && (
+                                                <tr>
+                                                    <td colSpan={2} className="text-right text-slate-400">Envío:</td>
+                                                    <td className="text-right amounts text-slate-400">{formatCurrency(selectedSale.shipping)}</td>
+                                                </tr>
+                                            )}
+                                            {(selectedSale.discount || 0) > 0 && (
+                                                <tr>
+                                                    <td colSpan={2} className="text-right text-red-400">Descuento:</td>
+                                                    <td className="text-right amounts text-red-400">-{formatCurrency(selectedSale.discount)}</td>
+                                                </tr>
+                                            )}
+                                        </>
+                                    )}
                                     <tr>
-                                        <td colSpan={isEditing ? 3 : 2} className="text-right text-emerald-400 font-bold" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>Total Venta:</td>
-                                        <td className="text-right amounts text-emerald-400 font-bold" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1rem' }}>
-                                            {formatCurrency(isEditing ? editItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0) - (selectedSale.discount || 0) : selectedSale.total)}
+                                        <td colSpan={isEditing ? 3 : 2} className="text-right text-emerald-400 font-bold" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.5rem' }}>Total Venta:</td>
+                                        <td className="text-right amounts text-emerald-400 font-bold" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.5rem' }}>
+                                            {formatCurrency(isEditing ? editItems.reduce((sum, item) => sum + Number(item.subtotal || 0), 0) - (selectedSale.discount || 0) : (selectedSale.total + (selectedSale.shipping || 0)))}
                                         </td>
                                     </tr>
                                     <tr>
                                         <td colSpan={isEditing ? 3 : 2} className="text-right text-slate-400">Monto Recibido:</td>
-                                        <td className="text-right amounts text-slate-300">{formatCurrency(selectedSale.amountTendered ?? selectedSale.total)}</td>
+                                        <td className="text-right amounts text-slate-300">{formatCurrency(selectedSale.amountTendered ?? (selectedSale.total + (selectedSale.shipping || 0)))}</td>
                                     </tr>
                                     <tr>
                                         <td colSpan={isEditing ? 3 : 2} className="text-right text-slate-400">Cambio:</td>
                                         <td className="text-right amounts text-slate-300">{formatCurrency(selectedSale.change ?? 0)}</td>
                                     </tr>
+                                    {!isEditing && selectedSale.balance > 0 && (
+                                        <tr>
+                                            <td colSpan={2} className="text-right text-amber-400 font-bold" style={{ paddingTop: '0.75rem' }}>Saldo Pendiente:</td>
+                                            <td className="text-right amounts text-amber-400 font-bold" style={{ paddingTop: '0.75rem' }}>
+                                                {formatCurrency(selectedSale.balance)}
+                                                {selectedSale.dueDate && (
+                                                    <div style={{ fontSize: '0.65rem', fontWeight: 600, color: '#f59e0b' }}>
+                                                        Vence: {format(new Date(selectedSale.dueDate), 'dd/MM/yyyy', { locale: es })}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {!isEditing && selectedSale.balance <= 0 && selectedSale.paymentMethod.includes('CREDITO') && (
+                                        <tr>
+                                            <td colSpan={2} className="text-right text-emerald-400 font-bold" style={{ paddingTop: '0.75rem' }}>Estado de Pago:</td>
+                                            <td className="text-right amounts text-emerald-400 font-bold" style={{ paddingTop: '0.75rem' }}>
+                                                Total Pagado
+                                            </td>
+                                        </tr>
+                                    )}
                                 </tfoot>
                             </table>
                         </div>
@@ -609,6 +680,114 @@ const SalesHistory: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {showReverseModal && selectedSale && (
+                <div className="modal-overlay" onClick={() => setShowReverseModal(false)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+                        <div className="modal-header">
+                            <div>
+                                <h2 style={{ color: '#ef4444' }}>Anular Venta #{selectedSale.id}</h2>
+                                <p className="text-sm text-slate-400">Esta acción no se puede deshacer</p>
+                            </div>
+                            <button className="btn-close" onClick={() => setShowReverseModal(false)}>
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: 0 }}>
+                                    Se devolverá el inventario de {selectedSale.details?.length || 0} producto(s).
+                                    {selectedSale.balance > 0 && ' Se cancelará el saldo pendiente.'}
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#e2e8f0' }}>
+                                        <span>Total venta:</span>
+                                        <span style={{ fontWeight: 700 }}>${Number(selectedSale.total || 0).toFixed(2)}</span>
+                                    </div>
+                                    {selectedSale.shipping > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94a3b8' }}>
+                                            <span>— Envío:</span>
+                                            <span>${Number(selectedSale.shipping).toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    {selectedSale.balance > 0 && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b' }}>
+                                            <span>— Saldo pendiente (se cancela):</span>
+                                            <span style={{ fontWeight: 700 }}>${Number(selectedSale.balance).toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                    {selectedSale.paymentMethod.includes('EFECTIVO') && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
+                                            <span>— Reembolso efectivo:</span>
+                                            <span style={{ fontWeight: 700 }}>${Number((selectedSale.amountTendered || 0) - (selectedSale.change || 0)).toFixed(2)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                {selectedSale.shipping > 0 && selectedSale.shippingDate && (
+                                    <div style={{ borderTop: '1px solid rgba(239,68,68,0.15)', paddingTop: '0.5rem', fontSize: '0.75rem', color: '#94a3b8', display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Fecha de despacho:</span>
+                                        <span style={{ fontWeight: 700, color: '#e2e8f0' }}>{format(new Date(selectedSale.shippingDate), 'dd/MM/yyyy', { locale: es })}</span>
+                                    </div>
+                                )}
+                                {selectedSale.shipping > 0 && !selectedSale.shippingDate && (
+                                    <div style={{ borderTop: '1px solid rgba(239,68,68,0.15)', paddingTop: '0.5rem', fontSize: '0.75rem', color: '#10b981', display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Despacho:</span>
+                                        <span style={{ fontWeight: 700 }}>Inmediato</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="field">
+                                <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Motivo de Anulación *</label>
+                                <textarea
+                                    className="modern-textarea"
+                                    placeholder="Describa el motivo..."
+                                    value={reversalReason}
+                                    onChange={e => setReversalReason(e.target.value)}
+                                    rows={3}
+                                    style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.75rem', color: 'white', resize: 'none', outline: 'none' }}
+                                />
+                            </div>
+                            {selectedSale.shipping > 0 && (
+                                <label className="compact-toggle" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.75rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={includeShipping}
+                                        onChange={e => setIncludeShipping(e.target.checked)}
+                                        style={{ width: '18px', height: '18px', accentColor: '#ef4444' }}
+                                    />
+                                    <span style={{ fontSize: '0.85rem', color: '#e2e8f0', fontWeight: 600 }}>
+                                        Incluir envío como gasto (${Number(selectedSale.shipping).toFixed(2)})
+                                    </span>
+                                </label>
+                            )}
+                        </div>
+                        <div className="modal-footer" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', padding: '1rem 1.5rem', borderTop: '1px solid #334155' }}>
+                            <button className="btn-secondary" onClick={() => setShowReverseModal(false)}>Cancelar</button>
+                            <button
+                                className="btn-danger"
+                                disabled={!reversalReason.trim() || isReversing}
+                                onClick={async () => {
+                                    if (!reversalReason.trim()) return;
+                                    setIsReversing(true);
+                                    try {
+                                        await saleApi.reverseSale(selectedSale.id, { reason: reversalReason.trim(), includeShipping });
+                                        toast.success('Venta anulada exitosamente');
+                                        setShowReverseModal(false);
+                                        setSelectedSale(null);
+                                        fetchHistory();
+                                    } catch (err: any) {
+                                        toast.error(err.response?.data?.message || 'Error al anular venta');
+                                    } finally {
+                                        setIsReversing(false);
+                                    }
+                                }}
+                            >
+                                {isReversing ? 'Anulando...' : 'Anular Venta'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .dashboard-main { flex: 1; display: flex; flex-direction: column; padding: 2rem 4rem; overflow: hidden; }
@@ -634,6 +813,9 @@ const SalesHistory: React.FC = () => {
                 .btn-secondary { background: rgba(255,255,255,0.1); color: white; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; }
                 .btn-secondary:hover:not(:disabled) { background: rgba(255,255,255,0.15); }
                 .btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
+                .btn-danger { background: #ef4444; color: white; border: none; padding: 0.55rem 1.5rem; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+                .btn-danger:disabled { opacity: 0.6; cursor: not-allowed; }
+                .btn-danger:hover:not(:disabled) { background: #dc2626; }
 
                 .client-cell { display: flex; flex-direction: column; }
                 .client-phone { font-size: 0.75rem; color: #94a3b8; }
@@ -713,6 +895,25 @@ const SalesHistory: React.FC = () => {
                 }
                 .btn-edit-sale:hover {
                     background: #f59e0b;
+                    color: white;
+                }
+
+                .btn-reverse-sale {
+                    background: rgba(239, 68, 68, 0.1);
+                    color: #ef4444;
+                    border: 1px solid rgba(239, 68, 68, 0.3);
+                    padding: 0.5rem 1rem;
+                    border-radius: 8px;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 0.5rem;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    transition: all 0.2s;
+                }
+                .btn-reverse-sale:hover {
+                    background: #ef4444;
                     color: white;
                 }
 

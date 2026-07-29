@@ -80,7 +80,7 @@ const Inventory: React.FC = () => {
     const [isMovementDetailModalOpen, setIsMovementDetailModalOpen] = useState(false);
     const [movementDetail, setMovementDetail] = useState<any>(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
-    const [detailType, setDetailType] = useState<'PURCHASE' | 'SALE' | 'TRANSFER' | null>(null);
+    const [detailType, setDetailType] = useState<'PURCHASE' | 'SALE' | 'TRANSFER' | 'REVERSAL' | null>(null);
 
     // New Provider States
     const [newProv, setNewProv] = useState({ name: '', vendor: '', phone: '', email: '', address: '' });
@@ -94,6 +94,9 @@ const Inventory: React.FC = () => {
     const [showProvResults, setShowProvResults] = useState(false);
     const searchContainerRef = useRef<HTMLDivElement>(null);
     const provSearchRef = useRef<HTMLDivElement>(null);
+    const provInputRef = useRef<HTMLDivElement>(null);
+    const provDropdownRef = useRef<HTMLDivElement>(null);
+    const [provDropdownPos, setProvDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
 
     const user = JSON.parse(localStorage.getItem('user') || '{ }');
@@ -116,15 +119,36 @@ const Inventory: React.FC = () => {
         };
     }, []);
 
+    const updateProvDropdownPos = () => {
+        if (provInputRef.current) {
+            const rect = provInputRef.current.getBoundingClientRect();
+            setProvDropdownPos({ top: rect.bottom, left: rect.left, width: rect.width });
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (provSearchRef.current && !provSearchRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            const isInsideSearch = provSearchRef.current?.contains(target);
+            const isInsideDropdown = provDropdownRef.current?.contains(target);
+            if (!isInsideSearch && !isInsideDropdown) {
                 setShowProvResults(false);
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (showProvResults) {
+            window.addEventListener('scroll', updateProvDropdownPos, true);
+            window.addEventListener('resize', updateProvDropdownPos);
+            return () => {
+                window.removeEventListener('scroll', updateProvDropdownPos, true);
+                window.removeEventListener('resize', updateProvDropdownPos);
+            };
+        }
+    }, [showProvResults]);
 
     const fetchDataFromSocket = (data: any) => {
         console.log('🔄 Sincronización Real-time recibida:', data);
@@ -242,14 +266,14 @@ const Inventory: React.FC = () => {
         setIsKardexModalOpen(true);
     };
 
-    const openMovementDetail = async (id: number, type: 'PURCHASE' | 'SALE' | 'TRANSFER') => {
+    const openMovementDetail = async (id: number, type: 'PURCHASE' | 'SALE' | 'TRANSFER' | 'REVERSAL') => {
         setLoadingDetail(true);
         setDetailType(type);
         setIsMovementDetailModalOpen(true);
         try {
             let res;
             if (type === 'PURCHASE') res = await purchaseApi.getPurchase(id);
-            else if (type === 'SALE') res = await saleApi.getSaleById(id);
+            else if (type === 'SALE' || type === 'REVERSAL') res = await saleApi.getSaleById(id);
             else res = await inventoryApi.getTransfer(id);
             setMovementDetail(res.data);
         } catch (err) {
@@ -597,6 +621,7 @@ const Inventory: React.FC = () => {
                                 <tr>
                                     <th>PRODUCTO</th>
                                     <th>CATEGORÍA</th>
+                                    <th>COSTO PROM.</th>
                                     <th>PRECIO BASE</th>
                                     <th>STOCK GLOBAL</th>
                                     <th>ESTADO</th>
@@ -628,6 +653,7 @@ const Inventory: React.FC = () => {
                                                 {p.category_name || 'Sin Categoría'}
                                             </span>
                                         </td>
+                                        <td className="font-mono font-bold text-center" style={{ color: '#10b981' }}>${Number(p.average_cost || 0).toFixed(2)}</td>
                                         <td className="font-mono font-bold text-center">${Number(p.base_price || 0).toFixed(2)}</td>
                                         <td className="font-mono font-bold">{p.stock_level || 0} UN</td>
                                         <td>
@@ -661,6 +687,10 @@ const Inventory: React.FC = () => {
                                 </div>
 
                                 <div className="panel-stats">
+                                    <div className="p-stat">
+                                        <label>Costo Promedio</label>
+                                        <div className="value" style={{ color: '#10b981' }}>${Number(selectedProduct.average_cost || 0).toFixed(2)}</div>
+                                    </div>
                                     <div className="p-stat">
                                         <label>Precio Base</label>
                                         <div className="value">${Number(selectedProduct.base_price).toFixed(2)}</div>
@@ -858,7 +888,7 @@ const Inventory: React.FC = () => {
                                         <label>PROVEEDOR</label>
                                         <div className="provider-search-container" style={{ position: 'relative' }}>
                                             <div className="select-with-btn">
-                                                <div style={{ flex: 1, position: 'relative' }}>
+                                                <div ref={provInputRef} style={{ flex: 1, position: 'relative' }}>
                                                     <input 
                                                         type="text"
                                                         placeholder="Buscar proveedor..."
@@ -866,13 +896,28 @@ const Inventory: React.FC = () => {
                                                         value={providerSearch}
                                                         onChange={(e) => {
                                                             setProviderSearch(e.target.value);
-                                                            if (e.target.value.trim().length > 0) setShowProvResults(true);
-                                                            else setShowProvResults(false);
+                                                            if (e.target.value.trim().length > 0) {
+                                                                setShowProvResults(true);
+                                                                requestAnimationFrame(() => {
+                                                                    if (provInputRef.current) {
+                                                                        const rect = provInputRef.current.getBoundingClientRect();
+                                                                        setProvDropdownPos({ top: rect.bottom, left: rect.left, width: rect.width });
+                                                                    }
+                                                                });
+                                                            } else setShowProvResults(false);
                                                         }}
                                                         onFocus={() => {
                                                             setActiveField('providerSearch');
                                                             setActiveKeyboard('qwerty');
-                                                            if (providerSearch.trim().length > 0) setShowProvResults(true);
+                                                            if (providerSearch.trim().length > 0) {
+                                                                setShowProvResults(true);
+                                                                requestAnimationFrame(() => {
+                                                                    if (provInputRef.current) {
+                                                                        const rect = provInputRef.current.getBoundingClientRect();
+                                                                        setProvDropdownPos({ top: rect.bottom, left: rect.left, width: rect.width });
+                                                                    }
+                                                                });
+                                                            }
                                                         }}
                                                         style={{ width: '100%', paddingRight: '45px' }}
                                                         inputMode="none"
@@ -902,70 +947,6 @@ const Inventory: React.FC = () => {
                                                         >
                                                             <Trash2 size={18} strokeWidth={2.5} />
                                                         </button>
-                                                    )}
-                                                    {showProvResults && providerSearch.trim().length > 0 && (
-                                                        <div className="search-results provider-results animate-in" style={{ 
-                                                            position: 'absolute', top: '100%', left: 0, right: 0, 
-                                                            zIndex: 100, background: 'white', borderRadius: '12px', 
-                                                            boxShadow: '0 10px 30px rgba(0,0,0,0.2)', maxHeight: '250px', 
-                                                            overflowY: 'auto', border: '1px solid #e2e8f0',
-                                                            marginTop: '6px'
-                                                        }}>
-                                                            <div 
-                                                                className="search-item" 
-                                                                style={{ padding: '12px 15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: selectedProviderId === '' ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}
-                                                                onClick={() => {
-                                                                    setSelectedProviderId('');
-                                                                    setProviderSearch('');
-                                                                    setShowProvResults(false);
-                                                                }}
-                                                            >
-                                                                <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>-- Directo (Sin Proveedor) --</span>
-                                                            </div>
-                                                            {(() => {
-                                                                const filtered = providers.filter(p => p.name.toLowerCase().includes(providerSearch.toLowerCase()));
-                                                                return (
-                                                                    <>
-                                                                        {filtered.map(p => (
-                                                                            <div 
-                                                                                key={p.id} 
-                                                                                className="search-item" 
-                                                                                style={{ padding: '12px 15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                                                                                onClick={() => {
-                                                                                    setSelectedProviderId(p.id);
-                                                                                    setProviderSearch(p.name);
-                                                                                    setShowProvResults(false);
-                                                                                }}
-                                                                            >
-                                                                                <div>
-                                                                                    <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9rem' }}>{highlightMatch(p.name, providerSearch)}</div>
-                                                                                    <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.vendor || 'S/N'} • {p.phone || 'Sin tel'}</div>
-                                                                                </div>
-                                                                                {selectedProviderId === p.id && <Check size={16} color="#10b981" />}
-                                                                            </div>
-                                                                        ))}
-                                                                        {filtered.length === 0 && (
-                                                                            <div 
-                                                                                className="search-item create-new-prov" 
-                                                                                style={{ 
-                                                                                    padding: '15px', color: '#3b82f6', background: 'rgba(59, 130, 246, 0.05)', 
-                                                                                    cursor: 'pointer', display: 'flex', gap: '10px', alignItems: 'center',
-                                                                                    fontWeight: 800, fontSize: '0.9rem'
-                                                                                }}
-                                                                                onClick={() => {
-                                                                                    setNewProv({ ...newProv, name: providerSearch });
-                                                                                    setIsProvModalOpen(true);
-                                                                                    setShowProvResults(false);
-                                                                                }}
-                                                                            >
-                                                                                <Plus size={18} strokeWidth={3} />
-                                                                                <span>Crear "{providerSearch}"</span>
-                                                                            </div>
-                                                                        )}
-                                                                    </>
-                                                                );
-                                                            })()}
-                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
@@ -1009,9 +990,9 @@ const Inventory: React.FC = () => {
                                                 <th style={{ width: '25%' }}>PRODUCTO</th>
                                                 <th className="text-center" style={{ width: '10%' }}>CANT.</th>
                                                 <th className="text-center" style={{ width: '12%' }}>UNIDAD</th>
-                                                <th className="text-center" style={{ width: '9%' }}>COSTO U.</th>
+                                                <th className="text-center" style={{ width: '11%' }}>COSTO U.</th>
                                                 <th className="text-center" style={{ width: '8%' }}>TOT. U.</th>
-                                                <th className="text-center" style={{ width: '13%' }}>TOT. LÍNEA</th>
+                                                <th className="text-center" style={{ width: '11%' }}>TOT. LÍNEA</th>
                                                 <th className="text-center" style={{ width: '15%' }}>LOTE / VENC.</th>
                                                 <th className="text-center" style={{ width: '8%' }}>ACC.</th>
                                             </tr>
@@ -1062,8 +1043,22 @@ const Inventory: React.FC = () => {
                                                         </select>
                                                     </td>
                                                     <td className="text-center">
-                                                        <div style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 'bold' }}>
-                                                            ${(Number(item.unit_cost) || 0).toFixed(4)}
+                                                        <div className="cost-input">
+                                                            <span>$</span>
+                                                            <input
+                                                                type="number"
+                                                                step="any"
+                                                                className="grid-input highlight"
+                                                                value={item.unit_cost}
+                                                                onChange={(e) => updateItem(idx, 'unit_cost', e.target.value)}
+                                                                onFocus={(e) => { 
+                                                                    e.target.select(); 
+                                                                    setActiveItemIndex(idx); 
+                                                                    setActiveField('unit_cost'); 
+                                                                    setActiveKeyboard('numeric'); 
+                                                                }}
+                                                                inputMode="none"
+                                                            />
                                                         </div>
                                                     </td>
                                                     <td className="text-center">
@@ -1238,6 +1233,71 @@ const Inventory: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {showProvResults && providerSearch.trim().length > 0 && provDropdownPos.width > 0 && (
+                            <div ref={provDropdownRef} className="search-results provider-results animate-in" style={{ 
+                                position: 'fixed', top: provDropdownPos.top, left: provDropdownPos.left, width: provDropdownPos.width,
+                                zIndex: 10000, background: 'white', borderRadius: '12px', 
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.2)', maxHeight: '250px', 
+                                overflowY: 'auto', border: '1px solid #e2e8f0',
+                                marginTop: '6px'
+                            }}>
+                                <div 
+                                    className="search-item" 
+                                    style={{ padding: '12px 15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', background: selectedProviderId === '' ? 'rgba(16, 185, 129, 0.1)' : 'transparent' }}
+                                    onClick={() => {
+                                        setSelectedProviderId('');
+                                        setProviderSearch('');
+                                        setShowProvResults(false);
+                                    }}
+                                >
+                                    <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>-- Directo (Sin Proveedor) --</span>
+                                </div>
+                                {(() => {
+                                    const filtered = providers.filter(p => p.name.toLowerCase().includes(providerSearch.toLowerCase()));
+                                    return (
+                                        <>
+                                            {filtered.map(p => (
+                                                <div 
+                                                    key={p.id} 
+                                                    className="search-item" 
+                                                    style={{ padding: '12px 15px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                                    onClick={() => {
+                                                        setSelectedProviderId(p.id);
+                                                        setProviderSearch(p.name);
+                                                        setShowProvResults(false);
+                                                    }}
+                                                >
+                                                    <div>
+                                                        <div style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.9rem' }}>{highlightMatch(p.name, providerSearch)}</div>
+                                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.vendor || 'S/N'} • {p.phone || 'Sin tel'}</div>
+                                                    </div>
+                                                    {selectedProviderId === p.id && <Check size={16} color="#10b981" />}
+                                                </div>
+                                            ))}
+                                            {filtered.length === 0 && (
+                                                <div 
+                                                    className="search-item create-new-prov" 
+                                                    style={{ 
+                                                        padding: '15px', color: '#3b82f6', background: 'rgba(59, 130, 246, 0.05)', 
+                                                        cursor: 'pointer', display: 'flex', gap: '10px', alignItems: 'center',
+                                                        fontWeight: 800, fontSize: '0.9rem'
+                                                    }}
+                                                    onClick={() => {
+                                                        setNewProv({ ...newProv, name: providerSearch });
+                                                        setIsProvModalOpen(true);
+                                                        setShowProvResults(false);
+                                                    }}
+                                                >
+                                                    <Plus size={18} strokeWidth={3} />
+                                                    <span>Crear "{providerSearch}"</span>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        )}
 
                         <footer className="erp-modal-footer">
                             <div className="footer-stats">
@@ -1435,6 +1495,7 @@ const Inventory: React.FC = () => {
                                                 <th>FECHA</th>
                                                 <th>TIPO</th>
                                                 <th>REFERENCIA</th>
+                                                <th className="text-right">COSTO U.</th>
                                                 <th className="text-right">S. INICIAL</th>
                                                 <th className="text-right">MOV</th>
                                                 <th className="text-right">S. FINAL</th>
@@ -1451,6 +1512,9 @@ const Inventory: React.FC = () => {
                                                         </span>
                                                     </td>
                                                     <td className="ref">{item.reference}</td>
+                                                    <td className="text-right font-mono" style={{ color: item.unitCost ? '#10b981' : '#334155' }}>
+                                                        {item.unitCost ? `$${Number(item.unitCost).toFixed(2)}` : '---'}
+                                                    </td>
                                                     <td className="text-right font-bold" style={{ color: '#94a3b8' }}>
                                                         {item.initialBalance}
                                                     </td>
@@ -2100,9 +2164,9 @@ const Inventory: React.FC = () => {
                     .erp-grid th:nth-child(1) { width: 25% !important; }
                     .erp-grid th:nth-child(2) { width: 10% !important; }
                     .erp-grid th:nth-child(3) { width: 12% !important; }
-                    .erp-grid th:nth-child(4) { width: 9% !important; }
+                    .erp-grid th:nth-child(4) { width: 11% !important; }
                     .erp-grid th:nth-child(5) { width: 8% !important; }
-                    .erp-grid th:nth-child(6) { width: 13% !important; }
+                    .erp-grid th:nth-child(6) { width: 11% !important; }
                     .erp-grid th:nth-child(7) { width: 15% !important; }
                     .erp-grid th:nth-child(8) { width: 8% !important; }
 
@@ -2223,6 +2287,7 @@ const Inventory: React.FC = () => {
                                                 <th>FECHA</th>
                                                 <th>TIPO</th>
                                                 <th>REFERENCIA</th>
+                                                <th className="text-right">COSTO U.</th>
                                                 <th className="text-right">S. INICIAL</th>
                                                 <th className="text-right">MOV</th>
                                                 <th className="text-right">S. FINAL</th>
@@ -2240,6 +2305,9 @@ const Inventory: React.FC = () => {
                                                         </span>
                                                     </td>
                                                     <td className="ref">{item.reference}</td>
+                                                    <td className="text-right font-mono" style={{ color: item.unitCost ? '#10b981' : '#334155' }}>
+                                                        {item.unitCost ? `$${Number(item.unitCost).toFixed(2)}` : '---'}
+                                                    </td>
                                                     <td className="text-right font-bold" style={{ color: '#94a3b8' }}>
                                                         {item.initialBalance}
                                                     </td>
@@ -2492,7 +2560,7 @@ const Inventory: React.FC = () => {
                     <div className="movement-detail-modal">
                         <header className="detail-header">
                             <div>
-                                <h2>Detalle de {detailType === 'PURCHASE' ? 'Compra' : detailType === 'SALE' ? 'Venta' : 'Traslado'}</h2>
+                                <h2>Detalle de {detailType === 'PURCHASE' ? 'Compra' : detailType === 'SALE' ? 'Venta' : detailType === 'REVERSAL' ? 'Anulación' : 'Traslado'}</h2>
                                 <p>ID: {movementDetail ? (movementDetail.invoiceNumber || movementDetail.id) : 'Cargando...'}</p>
                             </div>
                             <button className="close-btn" onClick={() => setIsMovementDetailModalOpen(false)}>
@@ -2534,6 +2602,18 @@ const Inventory: React.FC = () => {
                                                 </div>
                                             </>
                                         )}
+                                        {detailType === 'REVERSAL' && movementDetail.reversedAt && (
+                                            <div className="info-item">
+                                                <label>Anulada</label>
+                                                <span style={{ color: '#ef4444' }}>{new Date(movementDetail.reversedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                                            </div>
+                                        )}
+                                        {detailType === 'REVERSAL' && movementDetail.reversalReason && (
+                                            <div className="info-item">
+                                                <label>Motivo</label>
+                                                <span style={{ color: '#f59e0b' }}>{movementDetail.reversalReason}</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <table className="detail-items-table">
                                         <thead>
@@ -2554,7 +2634,7 @@ const Inventory: React.FC = () => {
                                                         </div>
                                                     </td>
                                                     <td className="text-right font-bold" style={{ color: '#f59e0b' }}>{d.quantity}</td>
-                                                    {detailType === 'PURCHASE' && <td className="text-right" style={{ color: '#94a3b8' }}>${Number(d.unit_cost || 0).toFixed(2)}</td>}
+                                                    {detailType === 'PURCHASE' && <td className="text-right" style={{ color: '#94a3b8' }}>${Number(d.unitCost || d.unit_cost || 0).toFixed(2)}</td>}
                                                     {detailType === 'PURCHASE' && <td className="text-right font-bold" style={{ color: '#10b981' }}>${Number(d.subtotal || 0).toFixed(2)}</td>}
                                                 </tr>
                                             ))}

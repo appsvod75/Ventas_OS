@@ -270,7 +270,7 @@ const getProductKardex = async (req, res) => {
         const bId = parseInt(branchId);
 
         // 1. Fetch Movements
-        const [purchases, sales, transfers] = await Promise.all([
+        const [purchases, sales, transfers, reversals] = await Promise.all([
             prisma.purchaseD.findMany({
                 where: { productId: prodId, purchaseH: { branchId: bId } },
                 include: { purchaseH: { include: { user: true } } }
@@ -288,6 +288,14 @@ const getProductKardex = async (req, res) => {
                     ]
                 },
                 include: { transfer: { include: { user: true, fromBranch: true, toBranch: true } } }
+            }),
+            // Ventas revertidas con sus detalles para reflejar la devolucion en el kardex
+            prisma.saleD.findMany({
+                where: {
+                    productId: prodId,
+                    saleH: { branchId: bId, reversedAt: { not: null } }
+                },
+                include: { saleH: { include: { user: true, reversedBy: { select: { name: true } } } } }
             })
         ]);
 
@@ -352,7 +360,17 @@ const getProductKardex = async (req, res) => {
                     quantity: isEntry ? (t.quantity || 0) : -(t.quantity || 0),
                     user: t.transfer.user?.name || 'Sistema'
                 };
-            }).filter(Boolean)
+            }).filter(Boolean),
+            // 3. Add reversal entries (positive quantity = stock returns)
+            ...reversals.map(s => ({
+                recordId: s.saleHId,
+                recordType: 'REVERSAL',
+                date: s.saleH?.reversedAt || s.saleH?.createdAt || new Date(),
+                type: 'INGRESO (ANULACION)',
+                reference: `Anulación Venta #${s.saleHId}`,
+                quantity: (s.quantity || 0),
+                user: s.saleH?.reversedBy?.name || s.saleH?.user?.name || 'Sistema'
+            }))
         ];
 
 
@@ -367,7 +385,8 @@ const getProductKardex = async (req, res) => {
             return {
                 ...m,
                 initialBalance,
-                finalBalance: currentBalance
+                finalBalance: currentBalance,
+                unitCost: m.totalCost ? m.totalCost / Math.abs(m.quantity) : null
             };
         });
 

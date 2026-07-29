@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Package, Layers, Users, User, History, TrendingUp, DollarSign, Activity, Wallet, Truck, LogOut, Settings, ShieldCheck, Archive, Receipt, BarChart3, LineChart, Eye, Tags, Store, Building2, Banknote, Clock } from 'lucide-react';
+import { ShoppingCart, Package, Layers, Users, User, History, TrendingUp, DollarSign, Activity, Wallet, Truck, LogOut, Settings, ShieldCheck, Archive, Receipt, BarChart3, LineChart, Eye, Tags, Store, Building2, Banknote, Clock, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import BranchSwitcher from '../components/BranchSwitcher';
@@ -39,19 +39,30 @@ const AdminDashboard: React.FC = () => {
         }).format(val);
     };
 
+    const [dashboardOrder, setDashboardOrder] = React.useState<any[] | null>(null);
+
     React.useEffect(() => {
-        const fetchDashboardData = async () => {
+        let cancelled = false;
+        const fetchData = async () => {
             try {
-                const [logoRes, statsRes] = await Promise.all([
-                    configApi.getConfig(),
+                const [configRes, statsRes] = await Promise.all([
+                    api.get('/config?_=' + Date.now()),
                     statsApi.getDashboardStats()
                 ]);
-
-                if (logoRes.data?.logoUrl) setLogoUrl(logoRes.data.logoUrl);
+                if (cancelled) return;
+                if (configRes.data?.logoUrl) setLogoUrl(configRes.data.logoUrl);
+                const sc = configRes.data?.sidebarConfig;
+                if (sc) {
+                    const parsed = typeof sc === 'string' ? JSON.parse(sc) : sc;
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.dashboard) {
+                        setDashboardOrder([...parsed.dashboard]);
+                    }
+                }
                 setStatsData(statsRes.data);
             } catch (error) {
                 console.error('Error fetching dashboard data', error);
             }
+            if (cancelled) return;
             try {
                 const shipRes = await api.get('/sales/shipments/list?status=VENDIDO');
                 setPendingShipments(shipRes.data.length);
@@ -60,12 +71,12 @@ const AdminDashboard: React.FC = () => {
                 const shipRes = await api.get('/sales/shipments/list?status=DESPACHADO');
                 setPendingShipments(prev => prev + shipRes.data.length);
             } catch (_) {}
-            finally {
-                setIsLoading(false);
-                setIsLoadingStats(false);
-            }
+            setIsLoadingStats(false);
         };
-        fetchDashboardData();
+        fetchData();
+        const handler = () => fetchData();
+        window.addEventListener('config-updated', handler);
+        return () => { cancelled = true; window.removeEventListener('config-updated', handler); };
     }, []);
 
     const handleLogout = () => {
@@ -114,27 +125,51 @@ const AdminDashboard: React.FC = () => {
         }
     ];
 
-    const modules = [
-        { title: 'Punto de Venta', icon: <ShoppingCart size={22} />, path: '/pos', desc: 'Realizar ventas' },
-        { title: 'Inventario', icon: <Package size={22} />, path: '/inventory', desc: 'Control de stock' },
-        { title: 'Reposición de Stock', icon: <TrendingUp size={22} />, path: '/replenishment', desc: 'Sugerencias de compra' },
-        { title: 'Productos', icon: <Layers size={22} />, path: '/products', desc: 'Catálogo y precios' },
-        { title: 'Categorías', icon: <Tags size={22} />, path: '/categories', desc: 'Agrupación de items' },
-        { title: 'Proveedores', icon: <Building2 size={22} />, path: '/suppliers', desc: 'Gestión de compras' },
-        { title: 'Clientes', icon: <Users size={22} />, path: '/clients', desc: 'Base de datos' },
-        { title: 'Cuentas por Cobrar', icon: <Wallet size={22} />, path: '/receivable', desc: 'Cobros pendientes' },
-        { title: 'Cuentas por Pagar', icon: <Truck size={22} />, path: '/payable', desc: 'Deudas a proveedores' },
-        { title: 'Personal', icon: <User size={22} />, path: '/users', desc: 'Accesos y roles' },
-        { title: 'Sucursales', icon: <Store size={22} />, path: '/branches', desc: 'Sedes y bodegas' },
-        { title: 'Gastos', icon: <Receipt size={22} />, path: '/expenses', desc: 'Salidas de caja' },
-        { title: 'Historial', icon: <History size={22} />, path: '/sales-history', desc: 'Historial global' },
-        { title: 'Resumen Día', icon: <Eye size={22} />, path: '/summary', desc: 'Resumen actual' },
-        { title: 'Cortes Caja', icon: <Banknote size={22} />, path: '/closings', desc: 'Balances diarios' },
-        { title: 'Configuración', icon: <Settings size={22} />, path: '/settings', desc: 'Ajustes maestros' },
-        { title: 'Reportes', icon: <BarChart3 size={22} />, path: '/reports', desc: 'Estadísticas' },
-        { title: 'Proyecciones', icon: <LineChart size={22} />, path: '/projections', desc: 'Metas y pronósticos' },
-        { title: 'Envíos', icon: <Truck size={22} />, path: '/shipments', desc: 'Entregas programadas', badge: pendingShipments },
-    ];
+    const allDashboardModules: Record<string, any> = {
+        pos: { title: 'Punto de Venta', icon: <ShoppingCart size={22} />, path: '/pos', desc: 'Realizar ventas' },
+        summary: { title: 'Resumen Día', icon: <Eye size={22} />, path: '/summary', desc: 'Resumen actual' },
+        inventory: { title: 'Inventario', icon: <Package size={22} />, path: '/inventory', desc: 'Control de stock' },
+        replenishment: { title: 'Reposición', icon: <TrendingUp size={22} />, path: '/replenishment', desc: 'Sugerencias de compra' },
+        products: { title: 'Productos', icon: <Layers size={22} />, path: '/products', desc: 'Catálogo y precios' },
+        clients: { title: 'Clientes', icon: <Users size={22} />, path: '/clients', desc: 'Base de datos' },
+        expenses: { title: 'Gastos', icon: <Receipt size={22} />, path: '/expenses', desc: 'Salidas de caja' },
+        history: { title: 'Historial Ventas', icon: <History size={22} />, path: '/sales-history', desc: 'Historial global' },
+        projections: { title: 'Proyecciones', icon: <LineChart size={22} />, path: '/projections', desc: 'Metas y pronósticos' },
+        reports: { title: 'Reportes', icon: <BarChart3 size={22} />, path: '/reports', desc: 'Estadísticas' },
+        receivable: { title: 'Cuentas por Cobrar', icon: <Wallet size={22} />, path: '/receivable', desc: 'Cobros pendientes' },
+        payable: { title: 'Cuentas por Pagar', icon: <Truck size={22} />, path: '/payable', desc: 'Deudas a proveedores' },
+        transfers: { title: 'Traslados', icon: <Truck size={22} />, path: '/transfers', desc: 'Transferencias entre sucursales' },
+        closings: { title: 'Cortes de Caja', icon: <Banknote size={22} />, path: '/closings', desc: 'Balances diarios' },
+        categories: { title: 'Categorías', icon: <Tags size={22} />, path: '/categories', desc: 'Agrupación de items' },
+        suppliers: { title: 'Proveedores', icon: <Building2 size={22} />, path: '/suppliers', desc: 'Gestión de compras' },
+        branches: { title: 'Sucursales', icon: <Store size={22} />, path: '/branches', desc: 'Sedes y bodegas' },
+        users: { title: 'Personal', icon: <User size={22} />, path: '/users', desc: 'Accesos y roles' },
+        settings: { title: 'Configuración', icon: <Settings size={22} />, path: '/settings', desc: 'Ajustes maestros' },
+        audit: { title: 'Auditoría', icon: <BarChart3 size={22} />, path: '/audit', desc: 'Registro de actividades' },
+        shipments: { title: 'Envíos', icon: <Truck size={22} />, path: '/shipments', desc: 'Entregas programadas', badge: pendingShipments },
+        lookup: { title: 'Consultar', icon: <Search size={22} />, path: '/lookup', desc: 'Búsqueda de productos' },
+    };
+
+    const allModules = Object.values(allDashboardModules).reduce((acc: any, m: any) => {
+        acc[m.title] = m; return acc;
+    }, {} as Record<string, any>);
+    const savedLabels = dashboardOrder && dashboardOrder.length > 0
+        ? dashboardOrder.map((d: any) => d.label || d)
+        : null;
+    let modules: any[] = Object.keys(allModules)
+        .filter(t => t !== 'Configuración' || hasRole(ROLES.SUPER_ADMIN));
+    if (savedLabels) {
+        const ordered: any[] = [];
+        const remaining: any[] = [];
+        modules.forEach(t => {
+            const idx = savedLabels.indexOf(t);
+            if (idx >= 0) ordered[idx] = allModules[t];
+            else remaining.push(allModules[t]);
+        });
+        modules = ordered.filter(Boolean).concat(remaining);
+    } else {
+        modules = modules.map(t => allModules[t]);
+    }
 
     return (
         <div className="admin-dashboard-page">
@@ -197,62 +232,14 @@ const AdminDashboard: React.FC = () => {
                     <section className="modules-area">
                         <div className="modules-section">
                             <h2 className="section-title-mini"><Layers size={20} /> Módulos del Sistema</h2>
-                            <motion.div 
-                                className="modules-grid"
-                                variants={{
-                                    hidden: { opacity: 0 },
-                                    show: {
-                                        opacity: 1,
-                                        transition: {
-                                            staggerChildren: 0.06
-                                        }
-                                    }
-                                }}
-                                initial="hidden"
-                                animate="show"
-                            >
-                                {modules
-                                    .filter(mod => {
-                                        // RBAC: Solo Super Admin ve Configuración
-                                        if (mod.title === 'Configuración') {
-                                            return hasRole(ROLES.SUPER_ADMIN);
-                                        }
-                                        return true;
-                                    })
-                                    .sort((a, b) => {
-                                        if (a.title === 'Configuración') return 1;
-                                        if (b.title === 'Configuración') return -1;
-                                        if (a.title === 'Personal') return 1;
-                                        if (b.title === 'Personal') return -1;
-                                        return 0;
-                                    })
-                                    .map((mod, i) => (
-                                     <motion.button
+                            <div className="modules-grid">
+                                {modules.map((mod, i) => (
+                                     <button
                                          key={mod.title}
-                                         variants={{
-                                             hidden: { opacity: 0, y: 20 },
-                                             show: { opacity: 1, y: 0 }
-                                         }}
-                                         whileHover={{ scale: 1.02, backgroundColor: "#283548" }}
-                                         whileTap={{ scale: 0.98 }}
                                          onClick={() => navigate(mod.path)}
                                          className="module-card"
+                                         style={{ animation: `fadeInUp 0.45s ease-out ${i * 0.05}s both` }}
                                      >
-                                         <motion.div 
-                                             className="halo-spark"
-                                             variants={{
-                                                 hidden: { scale: 0.8, opacity: 0 },
-                                                 show: { 
-                                                     scale: [0.8, 1.2, 1],
-                                                     opacity: [0, 1, 0],
-                                                     transition: { 
-                                                         duration: 0.4, 
-                                                         delay: 0.05,
-                                                         ease: "easeOut" 
-                                                     } 
-                                                 }
-                                             }}
-                                         />
                                           <div className="mod-icon" style={{ position: 'relative' }}>
                                               {mod.icon}
                                               {(mod as any).badge > 0 && (
@@ -265,9 +252,9 @@ const AdminDashboard: React.FC = () => {
                                             <h3>{mod.title}</h3>
                                             <p>{mod.desc}</p>
                                         </div>
-                                    </motion.button>
+                                        </button>
                                 ))}
-                            </motion.div>
+                            </div>
                         </div>
                     </section>
                 </div>
@@ -468,6 +455,12 @@ const AdminDashboard: React.FC = () => {
                     background: #283548; 
                     border-color: #3b82f6; 
                 }
+                @keyframes fadeInUp {
+                    0%   { opacity: 0; transform: translateY(20px); box-shadow: 0 0 0 rgba(59,130,246,0); }
+                    40%  { opacity: 1; transform: translateY(0); box-shadow: 0 0 24px rgba(59,130,246,0.5); }
+                    100% { opacity: 1; transform: translateY(0); box-shadow: 0 0 0 rgba(59,130,246,0); }
+                }
+
                 
                 .mod-icon { 
                     padding: 0.5rem; 

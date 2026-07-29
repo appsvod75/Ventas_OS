@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { Search, ShoppingCart, User, Store, ChevronRight, Pill, Info, Plus, Minus, Trash2, X, Maximize2, FileText, CheckCircle2, Delete, Palette } from 'lucide-react';
+import { Search, ShoppingCart, User, Store, ChevronRight, Pill, Info, Plus, Minus, Trash2, X, Maximize2, FileText, CheckCircle2, Delete, Palette, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api, { productApi, saleApi, configApi } from '../services/api';
 import { socket, socketEvents } from '../services/socket';
@@ -23,7 +23,7 @@ const getCategoryColor = (catName: string) => {
 };
 
 const POS: React.FC = () => {
-  const { cart, addToCart, removeFromCart, updateQuantity, updateItemVariant, updateItemNotes, subtotal, total, clearCart, shippingCost, setShippingCost } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, updateItemVariant, updateItemNotes, updateCustomPrice, updateCustomData, subtotal, total, clearCart, shippingCost, setShippingCost } = useCart();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [activeCategory, setActiveCategory] = useState('Todos');
@@ -40,6 +40,7 @@ const POS: React.FC = () => {
   const [config, setConfig] = useState<any>(null);
   const [flyingItems, setFlyingItems] = useState<any[]>([]);
   const [designModal, setDesignModal] = useState<{ isOpen: boolean; item: any }>({ isOpen: false, item: null });
+  const [designForm, setDesignForm] = useState({ position: [] as string[], imageUrl: '', notes: '' });
   const printRef = useRef<HTMLDivElement>(null);
 
   const user = JSON.parse(localStorage.getItem('user') || '{"name": "Usuario"}');
@@ -142,8 +143,9 @@ const POS: React.FC = () => {
       items: cart.map(item => ({
         product_id: item.id,
         quantity: item.selectedVariant ? parseInt(item.quantity as any) * parseInt(item.selectedVariant.quantity as any) : parseInt(item.quantity as any),
-        unitPrice: item.selectedVariant ? Number(item.selectedVariant.price) / Number(item.selectedVariant.quantity) : Number(item.base_price),
-        notes: item.notes || null
+        unitPrice: item.customPrice ? Number(item.customPrice) : (item.selectedVariant ? Number(item.selectedVariant.price) / Number(item.selectedVariant.quantity) : Number(item.base_price)),
+        notes: item.notes || null,
+        customData: item.customData || null
       }))
     };
 
@@ -165,7 +167,7 @@ const POS: React.FC = () => {
         balance: balance,
         dueDate: dueDate,
         details: cart.map(item => {
-          const unitPrice = item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.base_price);
+          const unitPrice = item.customPrice || (item.selectedVariant ? Number(item.selectedVariant.price) : Number(item.base_price));
           return {
             quantity: item.quantity,
             subtotal: unitPrice * Number(item.quantity),
@@ -387,7 +389,8 @@ const POS: React.FC = () => {
 
         <div className="cart-items">
           {cart.map(item => {
-            const currentPrice = item.selectedVariant ? item.selectedVariant.price : item.base_price;
+            const basePrice = item.selectedVariant ? item.selectedVariant.price : item.base_price;
+            const currentPrice = item.customPrice !== undefined ? item.customPrice : basePrice;
             return (
               <div key={item.cartItemId} className="cart-item-modern">
                 {/* Fila 1: Nombre del Producto */}
@@ -398,7 +401,38 @@ const POS: React.FC = () => {
                 {/* Fila 2: Precio y Controles */}
                 <div className="cart-item-main-row">
                   <div className="price-box">
-                    <span className="price-val">${Number(currentPrice).toFixed(2)}</span>
+                    {item.allowPriceChange ? (
+                      <div className="price-edit-group">
+                        <span className="price-edit-prefix">$</span>
+                          <input
+                          type="number"
+                          step="0.01"
+                          className="price-edit-input"
+                          value={currentPrice}
+                          onFocus={e => e.target.select()}
+                          onChange={e => {
+                            const val = e.target.value;
+                            if (val === '' || val === '0') {
+                              updateCustomPrice(item.cartItemId, 0);
+                            } else {
+                              const num = parseFloat(val);
+                              if (!isNaN(num)) updateCustomPrice(item.cartItemId, num);
+                            }
+                          }}
+                          onBlur={e => {
+                            const val = parseFloat(e.target.value);
+                            if (isNaN(val) || val < basePrice) {
+                              if (val < basePrice && !isNaN(val)) {
+                                toast.error('Precio no permitido — debe ser mayor o igual al base');
+                              }
+                              updateCustomPrice(item.cartItemId, basePrice);
+                            }
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <span className="price-val">${Number(currentPrice).toFixed(2)}</span>
+                    )}
                     {item.selectedVariant && (
                       <span className="price-unit-info">
                         ({item.selectedVariant.quantity} und)
@@ -417,8 +451,17 @@ const POS: React.FC = () => {
                       </button>
                     </div>
                     {item.hasCustomization && (
-                      <button className="design-btn" onClick={() => setDesignModal({ isOpen: true, item })} title="Diseños">
+                      <button className={`design-btn ${item.customData ? 'has-data' : ''}`} onClick={() => {
+                        const existing = item.customData || {};
+                        setDesignForm({
+                            position: existing.position || [],
+                            imageUrl: existing.imageUrl || '',
+                            notes: existing.notes || ''
+                        });
+                        setDesignModal({ isOpen: true, item });
+                      }} title="Diseños">
                         <Palette size={14} />
+                        {item.customData && <span className="design-check"><Check size={8} /></span>}
                       </button>
                     )}
                     <button className="del-btn" onClick={() => removeFromCart(item.cartItemId)}>
@@ -676,12 +719,64 @@ const POS: React.FC = () => {
                   <X size={20} />
                 </button>
               </div>
-              <div className="design-modal-body">
-                <div className="design-construction">
-                  <Palette size={48} />
-                  <h4>En Construcción</h4>
-                  <p>Esta funcionalidad estará disponible próximamente.</p>
+              <div className="design-modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem' }}>
+                <div className="field">
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'block' }}>Posición del Diseño</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {['Adelante', 'Atrás'].map(p => (
+                      <label key={p} style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem',
+                        background: designForm.position.includes(p) ? 'rgba(236,72,153,0.15)' : '#0f172a',
+                        border: `1px solid ${designForm.position.includes(p) ? '#ec4899' : '#334155'}`,
+                        borderRadius: '10px', cursor: 'pointer', color: designForm.position.includes(p) ? '#ec4899' : '#94a3b8',
+                        fontWeight: 700, fontSize: '0.85rem', transition: 'all 0.2s'
+                      }}>
+                        <input type="checkbox" checked={designForm.position.includes(p)}
+                          onChange={() => setDesignForm({
+                            ...designForm,
+                            position: designForm.position.includes(p)
+                              ? designForm.position.filter(x => x !== p)
+                              : [...designForm.position, p]
+                          })}
+                          style={{ accentColor: '#ec4899', width: '16px', height: '16px' }}
+                        />
+                        {p}
+                      </label>
+                    ))}
+                  </div>
                 </div>
+                <div className="field">
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'block' }}>URL de Imagen Referencia</label>
+                  <input type="url" placeholder="https://ejemplo.com/diseno.jpg" value={designForm.imageUrl}
+                    onChange={e => setDesignForm({ ...designForm, imageUrl: e.target.value })}
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.8rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                  />
+                  {designForm.imageUrl && (
+                    <div style={{ marginTop: '0.5rem', width: '80px', height: '80px', borderRadius: '8px', overflow: 'hidden', background: '#0f172a', border: '1px solid #334155' }}>
+                      <img src={designForm.imageUrl} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                  )}
+                </div>
+                <div className="field">
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.4rem', display: 'block' }}>Observaciones</label>
+                  <textarea placeholder="Ej: El diseño de adelante a la altura del pecho, el de atrás grande centrado..."
+                    value={designForm.notes}
+                    onChange={e => setDesignForm({ ...designForm, notes: e.target.value })}
+                    rows={4}
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.8rem', color: 'white', fontSize: '0.85rem', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
+                  />
+                </div>
+              </div>
+              <div className="design-modal-footer" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', padding: '1rem 1.25rem', borderTop: '1px solid #334155' }}>
+                <button className="design-btn-cancel" onClick={() => setDesignModal({ isOpen: false, item: null })}>Cancelar</button>
+                <button className="design-btn-save" onClick={() => {
+                  const data = { ...designForm };
+                  updateCustomData(designModal.item.cartItemId, data);
+                  setDesignModal({ isOpen: false, item: null });
+                }}>
+                  <Check size={16} /> Guardar Diseño
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1338,7 +1433,7 @@ const POS: React.FC = () => {
         }
         .cart-item-name-row h4 {
           margin: 0;
-          font-size: 0.72rem;
+          font-size: 0.78rem;
           font-weight: 800;
           color: #0f172a;
           text-transform: uppercase;
@@ -1360,6 +1455,32 @@ const POS: React.FC = () => {
           font-weight: 800;
           color: ${user.color_hex || '#3b82f6'};
         }
+        .price-edit-group {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: #0f172a;
+          border: 1px solid #0ea5e9;
+          border-radius: 8px;
+          padding: 2px 8px;
+        }
+        .price-edit-prefix {
+          font-size: 0.85rem;
+          font-weight: 800;
+          color: #0ea5e9;
+        }
+        .price-edit-input {
+          width: 80px;
+          background: transparent;
+          border: none;
+          color: #0ea5e9;
+          font-weight: 800;
+          font-size: 1rem;
+          font-family: monospace;
+          outline: none;
+          padding: 2px 0;
+        }
+        .price-edit-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .price-unit-info {
           font-size: 0.75rem;
           color: #64748b;
@@ -1531,6 +1652,14 @@ const POS: React.FC = () => {
           background: rgba(236, 72, 153, 0.2);
           border-color: #ec4899;
         }
+        .design-btn.has-data { position: relative; }
+        .design-btn.has-data svg:first-child { color: #10b981; }
+        .design-check {
+          position: absolute; top: -3px; right: -3px;
+          background: #10b981; color: white;
+          border-radius: 50%; width: 14px; height: 14px;
+          display: flex; align-items: center; justify-content: center;
+        }
 
         .design-modal {
           background: #1e293b;
@@ -1570,32 +1699,22 @@ const POS: React.FC = () => {
           color: white;
         }
         .design-modal-body {
-          padding: 2rem 1.25rem;
-          display: flex;
-          justify-content: center;
-        }
-        .design-construction {
-          text-align: center;
-          color: #64748b;
+          padding: 1.25rem;
           display: flex;
           flex-direction: column;
-          align-items: center;
-          gap: 0.75rem;
+          gap: 1rem;
         }
-        .design-construction svg {
-          color: #ec4899;
-          opacity: 0.5;
-        }
-        .design-construction h4 {
-          font-size: 1.2rem;
-          font-weight: 800;
-          color: #94a3b8;
-          margin: 0;
-        }
-        .design-construction p {
-          font-size: 0.85rem;
+        .design-btn-cancel { background: transparent; border: 1px solid #334155; color: #94a3b8; padding: 0.55rem 1.25rem; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .design-btn-cancel:hover { background: #334155; color: white; }
+        .design-btn-save { background: #ec4899; color: white; border: none; padding: 0.55rem 1.5rem; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s; }
+        .design-btn-save:hover { background: #db2777; transform: scale(1.02); }
+        .design-modal-body .field label {
+          font-size: 0.75rem;
+          font-weight: 700;
           color: #64748b;
-          margin: 0;
+          text-transform: uppercase;
+          margin-bottom: 0.4rem;
+          display: block;
         }
       `}</style>
     </div >

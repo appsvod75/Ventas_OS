@@ -27,6 +27,7 @@ import Projections from './pages/Projections';
 import DailySummary from './pages/DailySummary';
 import Transfers from './pages/Transfers';
 import Shipments from './pages/Shipments';
+import ProductLookupPage from './pages/ProductLookupPage';
 import { CartProvider } from './context/CartContext';
 import PWAInstallBanner from './components/PWAInstallBanner';
 import { getUser, hasRole, ROLES } from './utils/permissions';
@@ -69,26 +70,27 @@ const App: React.FC = () => {
             }, 3000);
         });
 
-        // Update title/favicon when config changes
+        // Cargar config inicial y escuchar cambios
         const handleConfigUpdate = async () => {
             try {
                 const res = await configApi.getConfig();
-                if (res.data?.businessName) document.title = res.data.businessName;
+                const name = res.data?.businessName || 'Mi Negocio';
+                document.title = name;
                 if (res.data?.logoUrl) {
                     const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
                     if (link) link.href = res.data.logoUrl;
                 }
-                // Actualizar manifest dinámico con nombre del negocio
                 const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
                 if (manifestLink) manifestLink.href = '/api/manifest';
             } catch {}
         };
+        handleConfigUpdate();
         window.addEventListener('config-updated', handleConfigUpdate);
 
         const currentVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
         const lastVersion = localStorage.getItem('lucky_app_version');
         if (currentVersion && lastVersion && lastVersion !== currentVersion) {
-            const name = document.title || 'LuckyPOS';
+            const name = document.title || 'Mi Negocio';
             import('react-hot-toast').then(({ toast }) => {
                 toast.success(`${name} se ha actualizado a la última versión automáticamente`, { duration: 3000 });
             });
@@ -319,6 +321,14 @@ const App: React.FC = () => {
                         element={
                             <ProtectedRoute>
                                 <Shipments />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/lookup"
+                        element={
+                            <ProtectedRoute>
+                                <ProductLookupPage />
                             </ProtectedRoute>
                         }
                     />

@@ -7,7 +7,7 @@ import {
   Settings as SettingsIcon, Save, Building, MapPin, Phone, Globe, Image as ImageIcon, Key, 
   StickyNote, Clock, List, ArrowUp, ArrowDown, GripVertical, TriangleAlert, ShieldAlert, 
   Trash2, RefreshCcw, X, CreditCard, ChevronRight, CheckCircle2, AlertCircle, ShoppingCart, 
-  Eye, EyeOff, Printer 
+  Eye, EyeOff, Printer, LayoutDashboard 
 } from 'lucide-react';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -183,7 +183,8 @@ const Settings: React.FC = () => {
         enableEmailTickets: false,
         enableQrCode: false,
         ticketWidth: '58mm',
-        sidebarConfig: [] as { key: string; label: string; enabled: boolean }[]
+        sidebarConfig: [] as { key: string; label: string; enabled: boolean }[],
+        dashboardConfig: [] as { key: string; label: string; enabled: boolean }[]
     });
     const [loading, setLoading] = useState(false);
     const [dangerModal, setDangerModal] = useState<{ isOpen: boolean; type: 'sales' | 'inventory' | 'products' | 'counter' | null }>({ isOpen: false, type: null });
@@ -211,7 +212,7 @@ const Settings: React.FC = () => {
                     enableQrCode: res.data.enableQrCode || false,
                     ticketWidth: res.data.ticketWidth || '58mm',
                     labelFields: res.data.labelFields || ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'],
-                    sidebarConfig: res.data.sidebarConfig || [
+                    sidebarConfig: (res.data.sidebarConfig?.sidebar) || res.data.sidebarConfig || [
                         { key: 'pos', label: 'Ventas (POS)', enabled: true },
                         { key: 'summary', label: 'Resumen Día', enabled: true },
                         { key: 'inventory', label: 'Inventario', enabled: true },
@@ -229,8 +230,10 @@ const Settings: React.FC = () => {
                         { key: 'branches', label: 'Sucursales', enabled: false },
                         { key: 'reports', label: 'Reportes', enabled: false },
                         { key: 'admin', label: 'Dashboard', enabled: true },
-                        { key: 'settings', label: 'Configuración', enabled: false }
-                    ]
+                        { key: 'settings', label: 'Configuración', enabled: false },
+                        { key: 'lookup', label: 'Consultar', enabled: true }
+                    ],
+                    dashboardConfig: (res.data.sidebarConfig?.dashboard) || []
                 });
             }
         } catch (error: any) {
@@ -239,13 +242,35 @@ const Settings: React.FC = () => {
         }
     };
 
+    const [initialConfig, setInitialConfig] = useState<string>('');
+
+    // Track initial config snapshot for dirty detection
+    useEffect(() => {
+        if (config.businessName !== undefined) {
+            setInitialConfig(JSON.stringify(config));
+        }
+    }, [config.businessName]);
+
+    const hasChanges = initialConfig && JSON.stringify(config) !== initialConfig;
+
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!hasChanges) return;
         setLoading(true);
         try {
-            await configApi.updateConfig(config);
+            // Combinar sidebar y dashboard en un solo objeto
+            const dashItems = (config.dashboardConfig || []).map((item: any) => ({ key: item.key, label: item.label }));
+            const payload = {
+                ...config,
+                sidebarConfig: {
+                    sidebar: config.sidebarConfig || [],
+                    dashboard: dashItems
+                }
+            };
+            await configApi.updateConfig(payload);
             toast.success('Configuración guardada correctamente');
             window.dispatchEvent(new Event('config-updated'));
+            setInitialConfig(JSON.stringify(config));
         } catch (error) {
             toast.error('Error al guardar configuración');
         } finally {
@@ -259,6 +284,7 @@ const Settings: React.FC = () => {
         { id: 'email', label: 'Email', icon: <Globe size={18} /> },
         { id: 'automation', label: 'Automatización', icon: <Clock size={18} /> },
         { id: 'sidebar', label: 'Barra Lateral', icon: <List size={18} /> },
+        { id: 'dashboard', label: 'Menú Principal', icon: <LayoutDashboard size={18} /> },
         { id: 'danger', label: 'Zona de Peligro', icon: <TriangleAlert size={18} color="#ef4444" /> }
     ];
 
@@ -347,16 +373,18 @@ const Settings: React.FC = () => {
                                     type="submit" 
                                     form="settings-form"
                                     className="btn-main" 
-                                    disabled={loading} 
+                                    disabled={loading || !hasChanges}
                                     style={{ 
                                         padding: '0.85rem 2rem', 
                                         fontSize: '1rem', 
-                                        boxShadow: '0 10px 20px -5px rgba(59, 130, 246, 0.3)',
-                                        height: 'fit-content'
+                                        boxShadow: loading || !hasChanges ? 'none' : '0 10px 20px -5px rgba(59, 130, 246, 0.3)',
+                                        height: 'fit-content',
+                                        opacity: loading || !hasChanges ? 0.5 : 1,
+                                        cursor: loading || !hasChanges ? 'not-allowed' : 'pointer'
                                     }}
                                 >
                                     <Save size={20} />
-                                    {loading ? 'Guardando...' : 'Aplicar Cambios'}
+                                    {loading ? 'Guardando...' : (!hasChanges ? 'Sin cambios' : 'Aplicar Cambios')}
                                 </button>
                             )}
                         </div>
@@ -764,6 +792,87 @@ const Settings: React.FC = () => {
                                                         setConfig({ ...config, sidebarConfig: newConfig });
                                                     }}
                                                     style={{ padding: '6px', borderRadius: '8px', cursor: index === config.sidebarConfig.length - 1 ? 'default' : 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: index === config.sidebarConfig.length - 1 ? '#1e293b' : '#94a3b8' }}
+                                                >
+                                                    <ArrowDown size={18} />
+                                                </button>
+                                            </div>
+                                        </Reorder.Item>
+                                    ))}
+                                </AnimatePresence>
+                            </Reorder.Group>
+                        </div>
+                    )}
+
+                    {activeTab === 'dashboard' && (
+                        <div className="settings-section animate-in fade-in slide-in-from-bottom-2" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '1.5rem 2rem', borderRadius: '24px', border: '1px solid #334155' }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', fontSize: '1.4rem', color: 'white' }}>
+                                <LayoutDashboard size={24} color="#3b82f6" /> Configuración del Menú Principal
+                            </h3>
+                            <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                                Arrastra para ordenar los módulos del panel principal del Dashboard.
+                            </p>
+
+                            <Reorder.Group
+                                axis="y"
+                                values={config.dashboardConfig || []}
+                                onReorder={(newOrder) => setConfig({ ...config, dashboardConfig: newOrder })}
+                                className="sidebar-config-list"
+                                style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxWidth: '600px', margin: '0 auto', paddingRight: '10px' }}
+                            >
+                                <AnimatePresence mode="popLayout">
+                                    {(config.dashboardConfig || []).map((item: any, index: number) => (
+                                        <Reorder.Item
+                                            key={item.key}
+                                            value={item}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95 }}
+                                            layout
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                background: '#0f172a', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid #1e293b',
+                                                transition: 'background 0.2s, border 0.2s', borderLeft: '4px solid #3b82f6'
+                                            }}
+                                            whileDrag={{
+                                                scale: 1.02,
+                                                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)',
+                                                background: '#1e293b',
+                                                borderColor: '#3b82f6',
+                                                zIndex: 10
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                <div style={{ color: '#475569', cursor: 'grab', display: 'flex', alignItems: 'center' }} className="drag-handle">
+                                                    <GripVertical size={20} />
+                                                </div>
+                                                <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'white' }}>{item.label}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                <button
+                                                    type="button"
+                                                    disabled={index === 0}
+                                                    onClick={() => {
+                                                        const newConfig = [...(config.dashboardConfig || [])];
+                                                        const temp = newConfig[index];
+                                                        newConfig[index] = newConfig[index - 1];
+                                                        newConfig[index - 1] = temp;
+                                                        setConfig({ ...config, dashboardConfig: newConfig });
+                                                    }}
+                                                    style={{ padding: '6px', borderRadius: '8px', cursor: index === 0 ? 'default' : 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: index === 0 ? '#1e293b' : '#94a3b8' }}
+                                                >
+                                                    <ArrowUp size={18} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={index === (config.dashboardConfig || []).length - 1}
+                                                    onClick={() => {
+                                                        const newConfig = [...(config.dashboardConfig || [])];
+                                                        const temp = newConfig[index];
+                                                        newConfig[index] = newConfig[index + 1];
+                                                        newConfig[index + 1] = temp;
+                                                        setConfig({ ...config, dashboardConfig: newConfig });
+                                                    }}
+                                                    style={{ padding: '6px', borderRadius: '8px', cursor: index === (config.dashboardConfig || []).length - 1 ? 'default' : 'pointer', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', color: index === (config.dashboardConfig || []).length - 1 ? '#1e293b' : '#94a3b8' }}
                                                 >
                                                     <ArrowDown size={18} />
                                                 </button>
