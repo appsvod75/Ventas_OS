@@ -20,6 +20,43 @@ const createSale = async (req, res) => {
         branch_id = req.user.branch_id;
     }
 
+    // Verificar apertura de caja
+    const branch = await prisma.branch.findUnique({ where: { id: parseInt(branch_id) } });
+    if (branch) {
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+        let needsOpening = false;
+
+        if (branch.closingType === 'daily') {
+            const op = await prisma.cashOpening.findUnique({
+                where: { branchId_date: { branchId: parseInt(branch_id), date: todayStart } }
+            });
+            needsOpening = !op;
+        } else if (branch.closingType === 'periodic') {
+            const dayOfWeek = today.getDay();
+            if (branch.closeDay >= branch.openDay) {
+                if (dayOfWeek < branch.openDay || dayOfWeek > branch.closeDay) needsOpening = true;
+            } else {
+                if (dayOfWeek > branch.closeDay && dayOfWeek < branch.openDay) needsOpening = true;
+            }
+            if (!needsOpening) {
+                let periodStart = new Date(today);
+                if (dayOfWeek >= branch.openDay) periodStart.setDate(today.getDate() - (dayOfWeek - branch.openDay));
+                else periodStart.setDate(today.getDate() - (dayOfWeek + 7 - branch.openDay));
+                periodStart.setHours(0, 0, 0, 0);
+                const op = await prisma.cashOpening.findFirst({
+                    where: { branchId: parseInt(branch_id), date: { gte: periodStart } },
+                    orderBy: { date: 'desc' }
+                });
+                needsOpening = !op || !!op.closedAt;
+            }
+        }
+
+        if (needsOpening && branch.strictOpen) {
+            return res.status(403).json({ message: 'No hay apertura de caja. Realice la apertura primero.' });
+        }
+    }
+
     try {
         const sale = await prisma.$transaction(async (tx) => {
             let total = 0;

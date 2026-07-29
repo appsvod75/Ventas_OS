@@ -546,7 +546,18 @@ const POS: React.FC = () => {
           <button
             className="pay-btn"
             disabled={cart.length === 0}
-            onClick={() => setIsCheckoutOpen(true)}
+            onClick={async () => {
+              try {
+                const res = await fetch('/api/openings/check', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+                const data = await res.json();
+                if (data.needsOpening) {
+                  if (data.strictOpen) return toast.error('No hay apertura de caja. Realice la apertura primero.');
+                  // Non-strict: warn and continue
+                  toast('No hay apertura de caja, puede continuar como admin', { icon: '⚠️' });
+                }
+              } catch {}
+              setIsCheckoutOpen(true);
+            }}
           >
             PAGAR AHORA <ChevronRight size={20} />
           </button>

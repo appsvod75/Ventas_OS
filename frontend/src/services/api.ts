@@ -95,6 +95,12 @@ export const inventoryApi = {
     updateInventory: (branchId: number, productId: number, data: { minStock?: number; maxStock?: number; stockLevel?: number }) => api.put(`/inventory/${branchId}/${productId}`, data)
 };
 
+export const openingApi = {
+    checkOpening: (branchId?: number) => api.get('/openings/check', { params: { branchId } }),
+    createOpening: (data: { amount: number; branchId?: number; date?: string }) => api.post('/openings', data),
+    getLastOpening: (branchId?: number) => api.get('/openings/last', { params: { branchId } })
+};
+
 export const saleApi = {
     createSale: (saleData: any) => api.post('/sales', saleData),
     getAccountsReceivable: () => api.get('/sales/receivable'),

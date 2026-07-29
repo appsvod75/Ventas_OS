@@ -14,9 +14,14 @@ model Branch {
   phone         String?
   isActive      Boolean        @default(true)
   colorHex      String         @default("#3b82f6")
+  closingType   String         @default("daily")
+  openDay       Int            @default(1)
+  closeDay      Int            @default(6)
+  strictOpen    Boolean        @default(false)
   createdAt     DateTime       @default(now())
   auditLogs     AuditLog[]
   cashClosings  CashClosing[]
+  cashOpenings  CashOpening[]
   expenses      Expense[]
   inventory     Inventory[]
   lots          InventoryLot[]
@@ -65,6 +70,8 @@ model User {
   expenses       Expense[]
   sales          SaleH[]      @relation("UserSales")
   reversedSales  SaleH[]      @relation("ReversedSales")
+  cashOpenings   CashOpening[] @relation("CashOpeningUser")
+  cashClosings   CashOpening[] @relation("CashClosingUser")
   transfers      Transfer[]
   purchases      PurchaseH[]
   branch         Branch?         @relation(fields: [branchId], references: [id])
@@ -340,6 +347,22 @@ model PaymentApplication {
   amountApplied Float
   sale          SaleH         @relation(fields: [saleId], references: [id])
   payment       ClientPayment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model CashOpening {
+  id        Int      @id @default(autoincrement())
+  branchId  Int
+  date      DateTime
+  amount    Float
+  openedAt  DateTime @default(now())
+  openedById Int?
+  closedAt  DateTime?
+  closedById Int?
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  openedBy  User?    @relation("CashOpeningUser", fields: [openedById], references: [id])
+  closedBy  User?    @relation("CashClosingUser", fields: [closedById], references: [id])
+
+  @@unique([branchId, date])
 }
 
 model CashClosing {

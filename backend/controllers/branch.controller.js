@@ -26,10 +26,19 @@ const createBranch = async (req, res) => {
 const updateBranch = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, address, phone, isActive } = req.body;
+        const { name, address, phone, isActive, closingType, openDay, closeDay, strictOpen } = req.body;
+        const data = {};
+        if (name !== undefined) data.name = name;
+        if (address !== undefined) data.address = address;
+        if (phone !== undefined) data.phone = phone;
+        if (isActive !== undefined) data.isActive = !!isActive;
+        if (closingType !== undefined) data.closingType = closingType;
+        if (openDay !== undefined) data.openDay = parseInt(openDay);
+        if (closeDay !== undefined) data.closeDay = parseInt(closeDay);
+        if (strictOpen !== undefined) data.strictOpen = !!strictOpen;
         const branch = await prisma.branch.update({
             where: { id: parseInt(id) },
-            data: { name, address, phone, isActive: !!isActive }
+            data
         });
         res.json(branch);
     } catch (error) {

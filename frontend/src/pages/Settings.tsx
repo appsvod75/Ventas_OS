@@ -7,7 +7,7 @@ import {
   Settings as SettingsIcon, Save, Building, MapPin, Phone, Globe, Image as ImageIcon, Key, 
   StickyNote, Clock, List, ArrowUp, ArrowDown, GripVertical, TriangleAlert, ShieldAlert, 
   Trash2, RefreshCcw, X, CreditCard, ChevronRight, CheckCircle2, AlertCircle, ShoppingCart, 
-  Eye, EyeOff, Printer, LayoutDashboard, ShieldCheck 
+  Eye, EyeOff, Printer, LayoutDashboard, ShieldCheck, Calendar 
 } from 'lucide-react';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -192,10 +192,12 @@ const Settings: React.FC = () => {
     const [allPerms, setAllPerms] = useState<any[]>([]);
     const [selectedRole, setSelectedRole] = useState<any>(null);
     const [savingRoles, setSavingRoles] = useState(false);
+    const [branches, setBranches] = useState<any[]>([]);
 
     useEffect(() => {
         fetchConfig();
         adminAuthApi.getRoles().then(res => setRoles(res.data)).catch(() => {});
+        import('../services/api').then(({ branchApi }) => branchApi.getBranches().then(res => setBranches(res.data)).catch(() => {}));
     }, []);
 
     const fetchConfig = async () => {
@@ -312,6 +314,12 @@ const Settings: React.FC = () => {
                     dashboard: dashItems
                 }
             };
+            if (config.branchConfig) {
+                const { branchApi } = await import('../services/api');
+                for (const [id, cfg] of Object.entries(config.branchConfig) as any) {
+                    await branchApi.updateBranch(Number(id), cfg).catch(() => {});
+                }
+            }
             await configApi.updateConfig(payload);
             toast.success('Configuración guardada correctamente');
             window.dispatchEvent(new Event('config-updated'));
@@ -331,6 +339,7 @@ const Settings: React.FC = () => {
         { id: 'sidebar', label: 'Barra Lateral', icon: <List size={18} /> },
         { id: 'dashboard', label: 'Menú Principal', icon: <LayoutDashboard size={18} /> },
         { id: 'roles', label: 'Roles', icon: <ShieldCheck size={18} /> },
+        { id: 'opening', label: 'Apertura', icon: <Calendar size={18} /> },
         { id: 'danger', label: 'Zona de Peligro', icon: <TriangleAlert size={18} color="#ef4444" /> }
     ];
 
@@ -983,6 +992,58 @@ const Settings: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    )}
+
+                    {activeTab === 'opening' && (
+                        <div className="settings-section animate-in fade-in slide-in-from-bottom-2" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '1.5rem 2rem', borderRadius: '24px', border: '1px solid #334155' }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', fontSize: '1.4rem', color: 'white' }}>
+                                <Calendar size={24} color="#10b981" /> Apertura y Cierre de Caja
+                            </h3>
+                            <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                                Configure el tipo de apertura de caja por sucursal.
+                            </p>
+                            {branches.map(b => {
+                                const cfg = config.branchConfig?.[b.id] || { closingType: 'daily', openDay: 1, closeDay: 6, strictOpen: false };
+                                return (
+                                    <div key={b.id} style={{ background: '#0f172a', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #334155' }}>
+                                        <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '0.75rem' }}>{b.name}</h4>
+                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'end' }}>
+                                            <div className="field">
+                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tipo</label>
+                                                <select value={cfg.closingType} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, closingType: e.target.value } } })}
+                                                    style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white', minWidth: '120px' }}>
+                                                    <option value="daily">Diaria</option>
+                                                    <option value="periodic">Periódica</option>
+                                                </select>
+                                            </div>
+                                            {cfg.closingType === 'periodic' && (
+                                                <>
+                                                    <div className="field">
+                                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Día Apertura</label>
+                                                        <select value={cfg.openDay} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, openDay: parseInt(e.target.value) } } })}
+                                                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white' }}>
+                                                            {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (<option key={i} value={i}>{d}</option>))}
+                                                        </select>
+                                                    </div>
+                                                    <div className="field">
+                                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Día Cierre</label>
+                                                        <select value={cfg.closeDay} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, closeDay: parseInt(e.target.value) } } })}
+                                                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white' }}>
+                                                            {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (<option key={i} value={i}>{d}</option>))}
+                                                        </select>
+                                                    </div>
+                                                </>
+                                            )}
+                                            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
+                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Estricto</label>
+                                                <input type="checkbox" checked={cfg.strictOpen} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, strictOpen: e.target.checked } } })}
+                                                    style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
 
