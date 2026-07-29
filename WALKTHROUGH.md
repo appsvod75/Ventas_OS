@@ -58,6 +58,8 @@ Esto genera:
 > 4. **SIEMPRE** incluir `--exclude='prisma/misventas.db'` y `--exclude='.env'` en rsync
 > 5. **SIEMPRE** verificar que `ALLOWED_ORIGINS` en `.env` incluya el dominio producción
 
+> 💡 **RECOMENDACIÓN**: Usar **FileZilla** (o cualquier FTP visual) en vez de rsync. Así ves archivo por archivo lo que estás subiendo y evitas accidentes con `.env`, `misventas.db`, etc.
+
 Todos los comandos se ejecutan desde la **raíz del proyecto** (`/home/renosa/Documentos/mis_apps/Ventas_OS/`).
 
 ### Subir frontend (build + rsync)

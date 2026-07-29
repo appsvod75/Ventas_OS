@@ -158,7 +158,26 @@ Ver `WALKTHROUGH.md` para el flujo completo.
 - Puerto backend: `3019`
 - URL producción: `https://minegocio.luckyapps.online`
 
-### Comando seguro para subir backend (copiar textual)
+### 🖥️ FileZilla — Opción recomendada (visual)
+Conectate con: `root@64.23.176.98` (puerto 22, SFTP).
+
+**Subir solo:**
+| Origen local | Destino VPS | Notas |
+|-------------|-------------|-------|
+| `frontend/dist/` | `/var/www/ventasee-os/frontend/dist/` | Todo el contenido |
+| `backend/controllers/` | `/var/www/ventasee-os/backend/controllers/` | 🟢 Seguro |
+| `backend/routes/` | `/var/www/ventasee-os/backend/routes/` | 🟢 Seguro |
+| `backend/prisma/schema.prisma` | `/var/www/ventasee-os/backend/prisma/schema.prisma` | 🟢 Seguro |
+| `backend/prisma/seed.js` | `/var/www/ventasee-os/backend/prisma/seed.js` | 🔴 No ejecutar |
+| `backend/server.js` | `/var/www/ventasee-os/backend/server.js` | 🟢 Seguro |
+
+**NO subir al VPS:**
+- `backend/.env` ❌ — Cada entorno tiene su configuración
+- `backend/prisma/misventas.db` ❌ — Base de datos producción
+- `backend/node_modules/` ❌ — Se regenera con `npm install`
+- `frontend/src/` ❌ — Se compila a `dist/`
+
+### Comando seguro para subir backend (solo si usas terminal)
 ```bash
 rsync -avz \
   --exclude='node_modules' \
