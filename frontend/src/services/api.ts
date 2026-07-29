@@ -52,7 +52,10 @@ export const adminAuthApi = {
     getUsers: () => api.get('/auth/users'),
     createUser: (data: any) => api.post('/auth/users', data),
     updateUser: (id: number, data: any) => api.put(`/auth/users/${id}`, data),
-    verifyPin: (pin: string) => api.post('/auth/verify-pin', { pin })
+    verifyPin: (pin: string) => api.post('/auth/verify-pin', { pin }),
+    getRoles: () => api.get('/auth/roles'),
+    getPermissions: () => api.get('/auth/permissions'),
+    updateRolePermissions: (roleId: number, permissionKeys: string[]) => api.put(`/auth/roles/${roleId}/permissions`, { permissionKeys })
 };
 
 export const providerApi = {

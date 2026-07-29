@@ -172,4 +172,55 @@ const verifyPin = async (req, res) => {
     }
 };
 
-module.exports = { login, getUsers, createUser, updateUser, verifyPin };
+const getRoles = async (req, res) => {
+    try {
+        const roles = await prisma.role.findMany({
+            include: {
+                rolePermissions: {
+                    include: { permission: { select: { key: true, name: true } } }
+                }
+            },
+            orderBy: { id: 'asc' }
+        });
+        res.json(roles);
+    } catch (error) {
+        res.status(500).json({ message: 'Error al obtener roles' });
+    }
+};
+
+const getPermissions = async (req, res) => {
+    try {
+        const perms = await prisma.permission.findMany({ orderBy: { key: 'asc' } });
+        res.json(perms);
+    } catch (error) {
+        res.status(500).json({ message: 'Error al obtener permisos' });
+    }
+};
+
+const updateRolePermissions = async (req, res) => {
+    const { id } = req.params;
+    const { permissionKeys } = req.body;
+
+    if (!Array.isArray(permissionKeys)) {
+        return res.status(400).json({ message: 'permissionKeys debe ser un array' });
+    }
+
+    try {
+        await prisma.$transaction(async (tx) => {
+            await tx.rolePermission.deleteMany({ where: { roleId: parseInt(id) } });
+            for (const key of permissionKeys) {
+                const perm = await tx.permission.findUnique({ where: { key } });
+                if (perm) {
+                    await tx.rolePermission.create({
+                        data: { roleId: parseInt(id), permissionId: perm.id }
+                    });
+                }
+            }
+        });
+        res.json({ message: 'Permisos actualizados correctamente' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error al actualizar permisos' });
+    }
+};
+
+module.exports = { login, getUsers, createUser, updateUser, verifyPin, getRoles, getPermissions, updateRolePermissions };

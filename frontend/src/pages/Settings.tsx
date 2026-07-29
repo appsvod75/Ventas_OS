@@ -7,7 +7,7 @@ import {
   Settings as SettingsIcon, Save, Building, MapPin, Phone, Globe, Image as ImageIcon, Key, 
   StickyNote, Clock, List, ArrowUp, ArrowDown, GripVertical, TriangleAlert, ShieldAlert, 
   Trash2, RefreshCcw, X, CreditCard, ChevronRight, CheckCircle2, AlertCircle, ShoppingCart, 
-  Eye, EyeOff, Printer, LayoutDashboard 
+  Eye, EyeOff, Printer, LayoutDashboard, ShieldCheck 
 } from 'lucide-react';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -188,9 +188,14 @@ const Settings: React.FC = () => {
     });
     const [loading, setLoading] = useState(false);
     const [dangerModal, setDangerModal] = useState<{ isOpen: boolean; type: 'sales' | 'inventory' | 'products' | 'counter' | null }>({ isOpen: false, type: null });
+    const [roles, setRoles] = useState<any[]>([]);
+    const [allPerms, setAllPerms] = useState<any[]>([]);
+    const [selectedRole, setSelectedRole] = useState<any>(null);
+    const [savingRoles, setSavingRoles] = useState(false);
 
     useEffect(() => {
         fetchConfig();
+        adminAuthApi.getRoles().then(res => setRoles(res.data)).catch(() => {});
     }, []);
 
     const fetchConfig = async () => {
@@ -285,6 +290,7 @@ const Settings: React.FC = () => {
         { id: 'automation', label: 'Automatización', icon: <Clock size={18} /> },
         { id: 'sidebar', label: 'Barra Lateral', icon: <List size={18} /> },
         { id: 'dashboard', label: 'Menú Principal', icon: <LayoutDashboard size={18} /> },
+        { id: 'roles', label: 'Roles', icon: <ShieldCheck size={18} /> },
         { id: 'danger', label: 'Zona de Peligro', icon: <TriangleAlert size={18} color="#ef4444" /> }
     ];
 
@@ -881,6 +887,61 @@ const Settings: React.FC = () => {
                                     ))}
                                 </AnimatePresence>
                             </Reorder.Group>
+                        </div>
+                    )}
+
+                    {activeTab === 'roles' && (
+                        <div className="settings-section animate-in fade-in slide-in-from-bottom-2" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '1.5rem 2rem', borderRadius: '24px', border: '1px solid #334155' }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', fontSize: '1.4rem', color: 'white' }}>
+                                <ShieldCheck size={24} color="#8b5cf6" /> Roles y Permisos
+                            </h3>
+                            <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                                Selecciona un rol y marca los permisos que tendrá.
+                            </p>
+                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+                                {roles.map(r => (
+                                    <button key={r.id} onClick={() => {
+                                        setSelectedRole(r);
+                                        if (allPerms.length === 0) {
+                                            adminAuthApi.getPermissions().then(res => setAllPerms(res.data)).catch(() => {});
+                                        }
+                                    }}
+                                    style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', border: selectedRole?.id === r.id ? '2px solid #8b5cf6' : '1px solid #334155', background: selectedRole?.id === r.id ? 'rgba(139,92,246,0.1)' : '#0f172a', color: selectedRole?.id === r.id ? '#a78bfa' : '#94a3b8', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
+                                        {r.name}
+                                    </button>
+                                ))}
+                            </div>
+                            {selectedRole && (
+                                <div style={{ background: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', padding: '1rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h4 style={{ margin: 0, color: 'white', fontWeight: 800 }}>{selectedRole.name}</h4>
+                                        <button className="btn-main" disabled={savingRoles} onClick={async () => {
+                                            setSavingRoles(true);
+                                            try {
+                                                const perms = allPerms.filter(p => p.enabled).map(p => p.key);
+                                                await adminAuthApi.updateRolePermissions(selectedRole.id, perms);
+                                                toast.success('Permisos actualizados');
+                                            } catch (e) { toast.error('Error al guardar'); }
+                                            finally { setSavingRoles(false); }
+                                        }} style={{ padding: '0.4rem 1rem', fontSize: '0.8rem' }}>
+                                            {savingRoles ? 'Guardando...' : 'Guardar Permisos'}
+                                        </button>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.3rem' }}>
+                                        {allPerms.map(p => {
+                                            const enabled = selectedRole.rolePermissions?.some((rp: any) => rp.permission?.key === p.key || rp.permissionKey === p.key);
+                                            return (
+                                                <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.5rem', borderRadius: '6px', cursor: 'pointer', background: enabled ? 'rgba(139,92,246,0.05)' : 'transparent', fontSize: '0.78rem', color: enabled ? 'white' : '#64748b' }}>
+                                                    <input type="checkbox" checked={!!enabled}
+                                                        onChange={() => setAllPerms(allPerms.map(pp => pp.key === p.key ? { ...pp, enabled: !enabled } : pp))}
+                                                        style={{ accentColor: '#8b5cf6', width: '14px', height: '14px' }} />
+                                                    {p.name || p.key}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
 
