@@ -113,7 +113,7 @@ export const auditApi = {
 export const statsApi = {
     getDashboardStats: (branchId?: number) => api.get('/stats/dashboard', { params: { branchId } }),
     getReports: (params: { startDate: string; endDate: string; branchId?: number }) => api.get('/stats/reports', { params }),
-    getSalesBySeller: (startDate: string, endDate: string) => api.get('/stats/sales-by-seller', { params: { startDate, endDate } })
+    getSalesBySeller: (startDate: string, endDate: string, sellerId?: number) => api.get('/stats/sales-by-seller', { params: { startDate, endDate, sellerId } })
 };
 
 export const expenseApi = {

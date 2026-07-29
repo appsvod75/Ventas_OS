@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { statsApi } from '../services/api';
+import { statsApi, adminAuthApi } from '../services/api';
 import { Search, User, DollarSign, Package, Calendar, TrendingUp, BarChart3, Filter } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -12,11 +12,19 @@ const SellerReport: React.FC = () => {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [expandedSeller, setExpandedSeller] = useState<number | null>(null);
+    const [sellers, setSellers] = useState<any[]>([]);
+    const [selectedSeller, setSelectedSeller] = useState<string>('');
+
+    useEffect(() => {
+        adminAuthApi.getUsers().then(res => setSellers(res.data)).catch(() => {});
+    }, []);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await statsApi.getSalesBySeller(startDate, endDate);
+            const params: any = { startDate, endDate };
+            if (selectedSeller) params.sellerId = selectedSeller;
+            const res = await statsApi.getSalesBySeller(startDate, endDate, selectedSeller ? Number(selectedSeller) : undefined);
             setData(res.data);
         } catch { toast.error('Error al cargar reporte'); }
         finally { setLoading(false); }
@@ -44,6 +52,17 @@ const SellerReport: React.FC = () => {
                         <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Hasta</label>
                         <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white' }} />
                     </div>
+                    {sellers.length > 0 && (
+                        <div className="field">
+                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Vendedor</label>
+                            <select value={selectedSeller} onChange={e => setSelectedSeller(e.target.value)} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white', minWidth: '140px' }}>
+                                <option value="">Todos</option>
+                                {sellers.map((s: any) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
                     <button onClick={fetchData} className="btn-main" style={{ padding: '0.5rem 1.5rem', height: 'fit-content' }}>
                         <Filter size={16} /> Consultar
                     </button>
