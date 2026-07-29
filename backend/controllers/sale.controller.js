@@ -578,7 +578,7 @@ const getShipments = async (req, res) => {
                 user: { select: { name: true } },
                 branch: { select: { name: true } },
                 details: {
-                    include: { product: { select: { name: true } } }
+                    include: { product: { select: { name: true, imageUrl: true } } }
                 }
             },
             orderBy: { shippingDate: { sort: 'asc', nulls: 'last' } }

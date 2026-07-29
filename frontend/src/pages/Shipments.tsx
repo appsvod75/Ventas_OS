@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Search, Clock, CheckCircle2, Truck, AlertCircle, X, Printer, Eye } from 'lucide-react';
+import { Package, Search, Clock, CheckCircle2, Truck, AlertCircle, X, Printer, Eye, Image as ImageIcon } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import api from '../services/api';
 import toast from 'react-hot-toast';
@@ -22,6 +22,7 @@ const Shipments: React.FC = () => {
     const [editingDelivery, setEditingDelivery] = useState<number | null>(null);
     const [deliveryDateInput, setDeliveryDateInput] = useState('');
     const [detailShipment, setDetailShipment] = useState<any>(null);
+    const [imageView, setImageView] = useState<{ url: string; name: string } | null>(null);
 
     const fetchShipments = async () => {
         try {
@@ -203,8 +204,16 @@ const Shipments: React.FC = () => {
                                 </tr></thead>
                                 <tbody>
                                     {detailShipment.details?.map((d: any, i: number) => (
-                                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                                            <td style={{ padding: '0.5rem', color: 'white' }}>{d.product?.name || 'Producto'}</td>
+                                         <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                            <td style={{ padding: '0.5rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                {d.product?.name || 'Producto'}
+                                                {(d.customData?.imageUrl || d.product?.imageUrl) && (
+                                                    <button onClick={() => setImageView({ url: d.customData?.imageUrl || d.product?.imageUrl, name: d.product?.name })}
+                                                        style={{ background: 'none', border: 'none', color: '#3b82f6', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                                                        <ImageIcon size={14} />
+                                                    </button>
+                                                )}
+                                            </td>
                                             <td style={{ textAlign: 'center', padding: '0.5rem', color: '#94a3b8' }}>{d.quantity}</td>
                                             <td style={{ textAlign: 'right', padding: '0.5rem', color: '#94a3b8' }}>${Number(d.unitPrice || 0).toFixed(2)}</td>
                                             <td style={{ textAlign: 'right', padding: '0.5rem', color: 'white', fontWeight: 700 }}>${Number(d.subtotal || 0).toFixed(2)}</td>
@@ -223,6 +232,19 @@ const Shipments: React.FC = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {imageView && (
+                <div className="modal-overlay" onClick={() => setImageView(null)} style={{ zIndex: 5000 }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#1e293b', borderRadius: '20px', padding: '1.5rem', maxWidth: '500px', width: '90%', border: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <h3 style={{ margin: 0, color: 'white', fontWeight: 800 }}>{imageView.name}</h3>
+                            <button onClick={() => setImageView(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}><X size={20} /></button>
+                        </div>
+                        <img src={imageView.url} alt={imageView.name} style={{ width: '100%', maxHeight: '60vh', objectFit: 'contain', borderRadius: '12px', background: '#0f172a' }}
+                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     </div>
                 </div>
             )}
