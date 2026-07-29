@@ -217,28 +217,68 @@ const Settings: React.FC = () => {
                     enableQrCode: res.data.enableQrCode || false,
                     ticketWidth: res.data.ticketWidth || '58mm',
                     labelFields: res.data.labelFields || ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'],
-                    sidebarConfig: (res.data.sidebarConfig?.sidebar) || res.data.sidebarConfig || [
-                        { key: 'pos', label: 'Ventas (POS)', enabled: true },
-                        { key: 'summary', label: 'Resumen Día', enabled: true },
-                        { key: 'inventory', label: 'Inventario', enabled: true },
-                        { key: 'replenishment', label: 'Reposición', enabled: true },
-                        { key: 'products', label: 'Productos', enabled: true },
-                        { key: 'categories', label: 'Categorías', enabled: false },
-                        { key: 'suppliers', label: 'Proveedores', enabled: false },
-                        { key: 'clients', label: 'Clientes', enabled: true },
-                        { key: 'receivable', label: 'CxC', enabled: false },
-                        { key: 'payable', label: 'CxP', enabled: false },
-                        { key: 'expenses', label: 'Gastos', enabled: true },
-                        { key: 'history', label: 'Hist. Ventas', enabled: true },
-                        { key: 'closings', label: 'Cortes Caja', enabled: false },
-                        { key: 'users', label: 'Personal', enabled: false },
-                        { key: 'branches', label: 'Sucursales', enabled: false },
-                        { key: 'reports', label: 'Reportes', enabled: false },
-                        { key: 'admin', label: 'Dashboard', enabled: true },
-                        { key: 'settings', label: 'Configuración', enabled: false },
-                        { key: 'lookup', label: 'Consultar', enabled: true }
-                    ],
-                    dashboardConfig: (res.data.sidebarConfig?.dashboard) || []
+                    sidebarConfig: (() => {
+                        const saved = (res.data.sidebarConfig?.sidebar) || (Array.isArray(res.data.sidebarConfig) ? res.data.sidebarConfig : []);
+                        const allSidebarItems = [
+                            { key: 'pos', label: 'Ventas (POS)', enabled: true },
+                            { key: 'summary', label: 'Resumen Día', enabled: true },
+                            { key: 'inventory', label: 'Inventario', enabled: true },
+                            { key: 'replenishment', label: 'Reposición', enabled: true },
+                            { key: 'products', label: 'Productos', enabled: true },
+                            { key: 'categories', label: 'Categorías', enabled: false },
+                            { key: 'suppliers', label: 'Proveedores', enabled: false },
+                            { key: 'clients', label: 'Clientes', enabled: true },
+                            { key: 'receivable', label: 'CxC', enabled: false },
+                            { key: 'payable', label: 'CxP', enabled: false },
+                            { key: 'expenses', label: 'Gastos', enabled: true },
+                            { key: 'history', label: 'Hist. Ventas', enabled: true },
+                            { key: 'closings', label: 'Cortes Caja', enabled: false },
+                            { key: 'users', label: 'Personal', enabled: false },
+                            { key: 'branches', label: 'Sucursales', enabled: false },
+                            { key: 'reports', label: 'Reportes', enabled: false },
+                            { key: 'admin', label: 'Dashboard', enabled: true },
+                            { key: 'settings', label: 'Configuración', enabled: false },
+                            { key: 'audit', label: 'Auditoría', enabled: false },
+                            { key: 'transfers', label: 'Traslados', enabled: false },
+                            { key: 'projections', label: 'Proyecciones', enabled: false },
+                            { key: 'lookup', label: 'Consultar', enabled: true },
+                            { key: 'sellerReport', label: 'Comisiones', enabled: true },
+                        ];
+                        const savedKeys = new Set(saved.map((i: any) => i.key));
+                        const newItems = allSidebarItems.filter(i => !savedKeys.has(i.key));
+                        return [...saved, ...newItems];
+                    })(),
+                    dashboardConfig: (() => {
+                        const saved = res.data.sidebarConfig?.dashboard || [];
+                        const allDashItems = [
+                            { key: 'pos', label: 'Punto de Venta' },
+                            { key: 'summary', label: 'Resumen Día' },
+                            { key: 'inventory', label: 'Inventario' },
+                            { key: 'replenishment', label: 'Reposición' },
+                            { key: 'products', label: 'Productos' },
+                            { key: 'clients', label: 'Clientes' },
+                            { key: 'expenses', label: 'Gastos' },
+                            { key: 'history', label: 'Historial Ventas' },
+                            { key: 'projections', label: 'Proyecciones' },
+                            { key: 'reports', label: 'Reportes' },
+                            { key: 'receivable', label: 'Cuentas por Cobrar' },
+                            { key: 'payable', label: 'Cuentas por Pagar' },
+                            { key: 'transfers', label: 'Traslados' },
+                            { key: 'closings', label: 'Cortes de Caja' },
+                            { key: 'categories', label: 'Categorías' },
+                            { key: 'suppliers', label: 'Proveedores' },
+                            { key: 'branches', label: 'Sucursales' },
+                            { key: 'users', label: 'Personal' },
+                            { key: 'settings', label: 'Configuración' },
+                            { key: 'audit', label: 'Auditoría' },
+                            { key: 'shipments', label: 'Envíos' },
+                            { key: 'lookup', label: 'Consultar' },
+                            { key: 'sellerReport', label: 'Comisiones' },
+                        ];
+                        const savedKeys = new Set(saved.map((i: any) => i.key));
+                        const newItems = allDashItems.filter(i => !savedKeys.has(i.key));
+                        return [...saved, ...newItems];
+                    })()
                 });
             }
         } catch (error: any) {
