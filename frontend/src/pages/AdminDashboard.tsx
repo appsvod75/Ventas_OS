@@ -233,7 +233,7 @@ const AdminDashboard: React.FC = () => {
                     <section className="modules-area">
                         <div className="modules-section">
                             <h2 className="section-title-mini"><Layers size={20} /> Módulos del Sistema</h2>
-                            <div className="modules-grid">
+                            <div className="modules-grid" key={dashboardOrder ? 'loaded' : 'loading'}>
                                 {modules.map((mod, i) => (
                                      <button
                                          key={mod.title}
