@@ -112,19 +112,47 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 - Se configura en creación/edición de producto, junto a proveedores
 - Uso futuro: reportes de comisiones por vendedor
 
-## Diseños / Personalización de Productos (Stamping)
+## Última sesión (29 Jul 2026) — Resumen de cambios
 
-### Estado Actual (Implementado)
-- `hasCustomization` (boolean) agregado a `Product` en Prisma, backend y frontend
-- Toggle "Diseños" en el modal de creación/edición de producto (estilo rosa cuando activo)
-- Columna "Diseños" en la tabla de productos (Sí/No)
-- En el carrito POS: botón rosa (`Palette`) junto al de eliminar para productos con `hasCustomization=true`
-- Modal "En Construcción" al presionar el botón (pendiente de formato del admin)
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Anulación ventas** | Botón "Anular" en detalle, regresa inventario, crea gasto reembolso/envío, cancela saldo, toggle envío editable según estado |
+| **Consultar producto** | Página completa con búsqueda por nombre/SKU, cards de precios, inventario por sucursal |
+| **Precio libre** | Checkbox "Precio Libre" en producto, input editable en carrito (solo alza), toast si menor al base |
+| **Diseños (Stamping)** | Modal con posición (adelante/atrás), imagen referencia, observaciones. `customData` en SaleD |
+| **Sidebar configurable** | Orden y visibilidad desde Settings, fallback por rol, items nuevos aparecen al final |
+| **Dashboard configurable** | Módulos ordenables desde Settings → Menú Principal, arrastrar y soltar |
+| **Roles y permisos** | Pestaña en Settings, checkboxes por permiso, 39 permisos en español |
+| **Filtro roles en sidebar** | Ventas solo ve: POS, Consultar, Clientes, Historial |
+| **Cliente con ventas** | Editar requiere PIN de admin si el cliente ya tiene ventas |
+| **Asignar vendedor** | Admin puede seleccionar vendedor en checkout, vendedor lo ve fijo |
+| **Comisiones** | Automático al crear venta (Fijo $ o %), reporte por vendedor con filtro fechas, desglose productos |
+| **Apertura de caja** | Configurable por sucursal (Settings), diaria o periódica, check "estricto", bloquea ventas si no hay apertura |
+| **Deliverys** | CRUD de repartidores, selector en modal de cliente (pendiente confirmar si va en checkout) |
+| **Visor de imagen** | Botón de imagen en detalle de envío, abre modal con foto del producto/diseño |
+| **Animación cascada** | Módulos del dashboard aparecen uno tras otro con glow azul |
 
-### Pendiente
-- Agregar campo `customData` (JSON) a SaleD para guardar: posición, talla, imageUrl, notas
-- Modal con formulario de personalización (formato a definir por el admin)
-- En Historial → Ver Detalle, mostrar modal en solo lectura con imagen ampliable
+### ⏳ Pendiente de confirmación
+- Delivery en checkout (Opción B) en vez de/asignación en cliente (esperando respuesta de admin)
+
+### 📦 Archivos nuevos en esta sesión
+- `frontend/src/pages/ProductLookupPage.tsx`
+- `frontend/src/pages/SellerReport.tsx`
+- `frontend/src/pages/Deliveries.tsx`
+- `backend/controllers/opening.controller.js`
+- `backend/controllers/delivery.controller.js`
+- `backend/routes/opening.routes.js`
+- `backend/routes/delivery.routes.js`
+- `frontend/src/components/ProductLookupModal.tsx`
+
+### 🧠 Lecciones aprendidas (deploy)
+1. **NUNCA** subir `misventas.db` al VPS
+2. **NUNCA** subir `.env` al VPS  
+3. **USAR** `DATABASE_URL` con ruta **absoluta** (`file:/var/www/...`)
+4. **NO** ejecutar `npm run seed` en VPS con datos reales
+5. **USAR FileZilla** para transfers — ves lo que subes
+6. **SOLO** `pm2 restart` y `pm2 logs` en terminal VPS
 
 ## Despliegue en Producción (VPS)
 Ver `WALKTHROUGH.md` para el flujo completo.
