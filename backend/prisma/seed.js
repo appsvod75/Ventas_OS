@@ -8,12 +8,53 @@ async function main() {
     console.log('🌱 Start seeding...');
 
     // 1. Create Permissions
+    const permissionNames = {
+        'all': 'Acceso Total',
+        'pos.access': 'Punto de Venta',
+        'admin.access': 'Dashboard Admin',
+        'sales.create': 'Crear Ventas',
+        'sales.view': 'Ver Ventas',
+        'sales.edit': 'Editar Ventas',
+        'products.view': 'Ver Productos',
+        'products.create': 'Crear Productos',
+        'products.edit': 'Editar Productos',
+        'products.delete': 'Eliminar Productos',
+        'inventory.view': 'Ver Inventario',
+        'inventory.edit': 'Editar Inventario',
+        'inventory.transfer': 'Traslados',
+        'categories.view': 'Ver Categorías',
+        'categories.manage': 'Gestionar Categorías',
+        'clients.view': 'Ver Clientes',
+        'clients.manage': 'Gestionar Clientes',
+        'providers.view': 'Ver Proveedores',
+        'providers.manage': 'Gestionar Proveedores',
+        'purchases.create': 'Crear Compras',
+        'purchases.view': 'Ver Compras',
+        'expenses.view': 'Ver Gastos',
+        'expenses.manage': 'Gestionar Gastos',
+        'expenses.delete': 'Eliminar Gastos',
+        'reports.view': 'Ver Reportes',
+        'users.view': 'Ver Usuarios',
+        'users.manage': 'Gestionar Usuarios',
+        'branches.view': 'Ver Sucursales',
+        'branches.manage': 'Gestionar Sucursales',
+        'config.view': 'Ver Configuración',
+        'config.edit': 'Editar Configuración',
+        'audit.view': 'Ver Auditoría',
+        'projections.view': 'Ver Proyecciones',
+        'projections.manage': 'Gestionar Proyecciones',
+        'closings.view': 'Ver Cortes',
+        'closings.force': 'Forzar Corte',
+        'settings.view': 'Ver Ajustes',
+        'settings.manage': 'Gestionar Ajustes',
+        'lookup.access': 'Consultar Productos',
+    };
     const permissionRecords = [];
     for (const key of allPermissions) {
-        const name = key.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' - ');
+        const name = permissionNames[key] || key.split('.').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' - ');
         const perm = await prisma.permission.upsert({
             where: { key },
-            update: {},
+            update: { name },
             create: { key, name, description: null }
         });
         permissionRecords.push(perm);
@@ -159,14 +200,16 @@ async function main() {
         { key: 'shipments', label: 'Envíos' },
         { key: 'lookup', label: 'Consultar' }
     ];
-    const combinedConfig = {
-        sidebar: defaultSidebarConfig,
-        dashboard: defaultDashboardConfig
-    };
     await prisma.masterConfig.upsert({
         where: { id: 1 },
-        update: { sidebarConfig: JSON.stringify(combinedConfig) },
-        create: { id: 1, businessName: 'LuckyPOS', autoClosingTime: '23:59', sidebarConfig: JSON.stringify(combinedConfig) }
+        update: {},
+        create: {
+            id: 1, businessName: 'Mi Negocio', autoClosingTime: '23:59',
+            sidebarConfig: JSON.stringify({
+                sidebar: defaultSidebarConfig,
+                dashboard: defaultDashboardConfig
+            })
+        }
     });
 
     console.log('✅ Default config created.');
