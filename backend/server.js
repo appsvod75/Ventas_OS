@@ -47,6 +47,7 @@ app.use('/api/stats', require('./routes/stats.routes.js'));
 app.use('/api/expenses', require('./routes/expense.routes.js'));
 app.use('/api/closings', require('./routes/closing.routes.js'));
 app.use('/api/openings', require('./routes/opening.routes.js'));
+app.use('/api/deliveries', require('./routes/delivery.routes.js'));
 app.use('/api/projections', require('./routes/projection.routes.js'));
 
 // Dynamic PWA Manifest

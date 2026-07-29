@@ -149,6 +149,7 @@ const AdminDashboard: React.FC = () => {
         shipments: { title: 'Envíos', icon: <Truck size={22} />, path: '/shipments', desc: 'Entregas programadas', badge: pendingShipments },
         lookup: { title: 'Consultar', icon: <Search size={22} />, path: '/lookup', desc: 'Búsqueda de productos' },
         sellerReport: { title: 'Comisiones', icon: <BarChart3 size={22} />, path: '/seller-report', desc: 'Ventas por vendedor' },
+        deliveries: { title: 'Deliverys', icon: <Truck size={22} />, path: '/deliveries', desc: 'Gestión de repartidores' },
     };
 
     const allModules = Object.values(allDashboardModules).reduce((acc: any, m: any) => {

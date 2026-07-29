@@ -199,6 +199,15 @@ model PurchaseD {
   purchaseH   PurchaseH @relation(fields: [purchaseHId], references: [id], onDelete: Cascade)
 }
 
+model Delivery {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  clients   Client[]
+}
+
 model Client {
   id             Int             @id @default(autoincrement())
   name           String
@@ -207,9 +216,11 @@ model Client {
   email          String?
   address        String?
   isActive       Boolean         @default(true)
+  deliveryId     Int?
   createdAt      DateTime        @default(now())
   clientPayments ClientPayment[]
   sales          SaleH[]
+  delivery       Delivery?       @relation(fields: [deliveryId], references: [id])
 }
 
 model SaleH {

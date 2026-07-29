@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Users, Edit3, CheckCircle, X, CreditCard, Phone, Mail, MapPin, User, FileText, Calendar, DollarSign, ArrowRight, Trash2, ShieldAlert } from 'lucide-react';
+import { Search, UserPlus, Users, Edit3, CheckCircle, X, CreditCard, Phone, Mail, MapPin, User, FileText, Calendar, DollarSign, ArrowRight, Trash2, ShieldAlert, Truck } from 'lucide-react';
 import { clientApi, adminAuthApi } from '../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,8 +31,10 @@ const Clients: React.FC = () => {
         phone: '',
         email: '',
         address: '',
-        isActive: true
+        isActive: true,
+        deliveryId: null as number | null
     });
+    const [deliveries, setDeliveries] = useState<any[]>([]);
 
     const [activeKeyboard, setActiveKeyboard] = useState<'qwerty' | 'numeric' | null>(null);
     const [activeField, setActiveField] = useState<string | null>(null);
@@ -51,10 +53,19 @@ const Clients: React.FC = () => {
         }
     };
 
+    const loadDeliveries = async () => {
+        try {
+            const { deliveryApi } = await import('../services/api');
+            const res = await deliveryApi.getAll();
+            setDeliveries(res.data);
+        } catch {}
+    };
+
     const handleOpenCreate = () => {
-        setFormData({ name: '', documentId: '', phone: '', email: '', address: '', isActive: true });
+        setFormData({ name: '', documentId: '', phone: '', email: '', address: '', isActive: true, deliveryId: null });
         setEditingId(null);
         setShowModal(true);
+        loadDeliveries();
     };
 
     const handleOpenEdit = (client: any) => {
@@ -64,10 +75,12 @@ const Clients: React.FC = () => {
             phone: client.phone || '',
             email: client.email || '',
             address: client.address || '',
-            isActive: client.isActive !== false
+            isActive: client.isActive !== false,
+            deliveryId: client.deliveryId || null
         });
         setEditingId(client.id);
         setShowModal(true);
+        loadDeliveries();
     };
 
     const handleSave = async (e: React.FormEvent) => {
@@ -443,6 +456,14 @@ const Clients: React.FC = () => {
                                                     }}
                                                 />
                                             </div>
+                                        </div>
+                                        <div className="field" style={{ marginTop: '1rem' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Truck size={14} /> Delivery Asignado</label>
+                                            <select value={formData.deliveryId || ''} onChange={e => setFormData({ ...formData, deliveryId: e.target.value ? Number(e.target.value) : null })}
+                                                style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.8rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}>
+                                                <option value="">Sin delivery</option>
+                                                {deliveries.map(d => (<option key={d.id} value={d.id}>{d.name} {d.phone ? `(${d.phone})` : ''}</option>))}
+                                            </select>
                                         </div>
                                     </div>
                                 </div>

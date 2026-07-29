@@ -15,7 +15,7 @@ const getClients = async (req, res) => {
 };
 
 const createClient = async (req, res) => {
-    const { name, documentId, phone, email, address, isActive } = req.body;
+    const { name, documentId, phone, email, address, isActive, deliveryId } = req.body;
     console.log('--- CREATE CLIENT ATTEMPT ---');
     console.log('Payload:', req.body);
     try {
@@ -26,7 +26,8 @@ const createClient = async (req, res) => {
                 phone: phone || null,
                 email: email || null,
                 address: address || null,
-                isActive: isActive !== undefined ? isActive : true
+                isActive: isActive !== undefined ? isActive : true,
+                ...(deliveryId && { delivery: { connect: { id: parseInt(deliveryId) } } })
             }
         });
         console.log('--- CREATE CLIENT SUCCESS ---');
@@ -40,7 +41,7 @@ const createClient = async (req, res) => {
 
 const updateClient = async (req, res) => {
     const { id } = req.params;
-    const { name, documentId, phone, email, address, isActive, pin } = req.body;
+    const { name, documentId, phone, email, address, isActive, pin, deliveryId } = req.body;
     try {
         // Check if client has sales and user is not admin
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
@@ -62,7 +63,8 @@ const updateClient = async (req, res) => {
                 phone: phone || null,
                 email: email || null,
                 address: address || null,
-                isActive: isActive !== undefined ? isActive : true
+                isActive: isActive !== undefined ? isActive : true,
+                ...(deliveryId !== undefined && { delivery: deliveryId ? { connect: { id: parseInt(deliveryId) } } : { disconnect: true } })
             }
         });
         res.json({ message: 'Cliente actualizado correctamente', data: updatedClient });

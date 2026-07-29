@@ -95,6 +95,12 @@ export const inventoryApi = {
     updateInventory: (branchId: number, productId: number, data: { minStock?: number; maxStock?: number; stockLevel?: number }) => api.put(`/inventory/${branchId}/${productId}`, data)
 };
 
+export const deliveryApi = {
+    getAll: () => api.get('/deliveries'),
+    create: (data: { name: string; phone?: string }) => api.post('/deliveries', data),
+    update: (id: number, data: any) => api.put(`/deliveries/${id}`, data)
+};
+
 export const openingApi = {
     checkOpening: (branchId?: number) => api.get('/openings/check', { params: { branchId } }),
     createOpening: (data: { amount: number; branchId?: number; date?: string }) => api.post('/openings', data),
