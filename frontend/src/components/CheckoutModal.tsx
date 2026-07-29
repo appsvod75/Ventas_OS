@@ -391,16 +391,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                 />
                             </div>
                         )}
-                        {isAdmin && sellers.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginTop: '0.25rem' }}>
-                                <User size={12} style={{ color: '#64748b' }} />
-                                <span style={{ color: '#64748b', fontSize: '0.6rem', fontWeight: 700, whiteSpace: 'nowrap' }}>VENDEDOR:</span>
-                                <select value={selectedSellerId || ''} onChange={e => setSelectedSellerId(Number(e.target.value))}
-                                    style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.65rem', fontWeight: 700, outline: 'none', fontFamily: 'inherit', flex: 1, cursor: 'pointer' }}>
-                                    {sellers.map((s: any) => (
-                                        <option key={s.id} value={s.id} style={{ background: '#1e293b', color: 'white' }}>{s.name}</option>
-                                    ))}
-                                </select>
+                        {sellers.length > 0 && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', borderRadius: '8px', marginTop: '0.25rem' }}>
+                                <User size={14} style={{ color: '#818cf8' }} />
+                                <span style={{ color: '#818cf8', fontSize: '0.65rem', fontWeight: 800, whiteSpace: 'nowrap' }}>VENDEDOR:</span>
+                                {isAdmin ? (
+                                    <select value={selectedSellerId || ''} onChange={e => setSelectedSellerId(Number(e.target.value))}
+                                        style={{ background: 'transparent', border: 'none', color: 'white', fontSize: '0.7rem', fontWeight: 700, outline: 'none', fontFamily: 'inherit', flex: 1, cursor: 'pointer' }}>
+                                        {sellers.map((s: any) => (
+                                            <option key={s.id} value={s.id} style={{ background: '#1e293b', color: 'white' }}>{s.name}</option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 700 }}>{user.name}</span>
+                                )}
                             </div>
                         )}
 
