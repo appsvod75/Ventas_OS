@@ -16,6 +16,8 @@ const Sidebar: React.FC = () => {
   const [sidebarConfig, setSidebarConfig] = useState<any[]>([]);
   const user = getUser();
   const isAdmin = hasRole(ROLES.SUPER_ADMIN, ROLES.ADMIN);
+  const isVentas = hasRole(ROLES.VENTAS);
+  const isSuperAdmin = hasRole(ROLES.SUPER_ADMIN);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -91,7 +93,9 @@ const Sidebar: React.FC = () => {
         const baseItem = allPossibleItems[conf.key];
         if (!baseItem || conf.enabled === false || conf.enabled === "false") return null;
         if ((conf.key === 'settings' || conf.key === 'users') && !isAdmin) return null;
-        if (conf.key === 'audit' && !hasRole(ROLES.SUPER_ADMIN)) return null;
+        if (conf.key === 'audit' && !isSuperAdmin) return null;
+        // Ventas solo ve items permitidos
+        if (isVentas && !['pos','summary','inventory','products','clients','expenses','history','lookup'].includes(conf.key)) return null;
         return baseItem;
       })
       .filter(Boolean)

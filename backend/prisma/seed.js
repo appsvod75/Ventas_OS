@@ -59,7 +59,7 @@ async function main() {
         });
     }
 
-    // Ventas: only pos.access, sales.create, products.view, inventory.view, clients.view, expenses.view
+    // Ventas: POS, consultar, crear/ver ventas, ver productos/inventario, clientes, gastos
     const vendorPermissions = [
         PERMISSIONS.POS_ACCESS,
         PERMISSIONS.SALES_CREATE,
@@ -67,9 +67,11 @@ async function main() {
         PERMISSIONS.PRODUCTS_VIEW,
         PERMISSIONS.INVENTORY_VIEW,
         PERMISSIONS.CLIENTS_VIEW,
+        PERMISSIONS.CLIENTS_MANAGE,
         PERMISSIONS.EXPENSES_VIEW,
         PERMISSIONS.CATEGORIES_VIEW,
         PERMISSIONS.PROVIDERS_VIEW,
+        PERMISSIONS.LOOKUP_ACCESS,
     ];
     for (const key of vendorPermissions) {
         const perm = permissionRecords.find(p => p.key === key);

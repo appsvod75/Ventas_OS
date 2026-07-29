@@ -39,6 +39,7 @@ const PERMISSIONS = {
     SETTINGS_VIEW: 'settings.view',
     SETTINGS_MANAGE: 'settings.manage',
     EXPENSES_DELETE: 'expenses.delete',
+    LOOKUP_ACCESS: 'lookup.access',
 };
 
 const allPermissions = Object.values(PERMISSIONS);
