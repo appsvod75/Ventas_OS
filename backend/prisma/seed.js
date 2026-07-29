@@ -174,7 +174,8 @@ async function main() {
         { key: 'audit', label: 'Auditoría', enabled: false },
         { key: 'transfers', label: 'Traslados', enabled: false },
         { key: 'projections', label: 'Proyecciones', enabled: false },
-        { key: 'lookup', label: 'Consultar', enabled: true }
+        { key: 'lookup', label: 'Consultar', enabled: true },
+        { key: 'sellerReport', label: 'Comisiones', enabled: false }
     ];
     const defaultDashboardConfig = [
         { key: 'pos', label: 'Punto de Venta' },
@@ -198,7 +199,8 @@ async function main() {
         { key: 'settings', label: 'Configuración' },
         { key: 'audit', label: 'Auditoría' },
         { key: 'shipments', label: 'Envíos' },
-        { key: 'lookup', label: 'Consultar' }
+        { key: 'lookup', label: 'Consultar' },
+        { key: 'sellerReport', label: 'Comisiones' }
     ];
     await prisma.masterConfig.upsert({
         where: { id: 1 },

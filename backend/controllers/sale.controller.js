@@ -48,13 +48,24 @@ const createSale = async (req, res) => {
                 const subtotal = unitPrice * item.quantity;
                 total += subtotal;
 
+                // Calcular comision
+                let commission = 0;
+                const commType = product.commissionType;
+                const commVal = Number(product.commissionValue) || 0;
+                if (commType === 'FIXED' && commVal > 0) {
+                    commission = commVal * item.quantity;
+                } else if (commType === 'PERCENTAGE' && commVal > 0) {
+                    commission = (commVal / 100) * subtotal;
+                }
+
                 saleDetailsData.push({
                     productId: item.product_id,
                     quantity: item.quantity,
                     unitPrice: unitPrice,
                     subtotal: subtotal,
                     notes: item.notes || null,
-                    customData: item.customData || null
+                    customData: item.customData || null,
+                    commission: commission
                 });
 
                 // Update Inventory (ONLY if NOT a service)

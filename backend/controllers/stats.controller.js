@@ -303,7 +303,70 @@ const getReports = async (req, res) => {
     }
 };
 
+const getSalesBySeller = async (req, res) => {
+    try {
+        const { startDate, endDate, sellerId, branchId } = req.query;
+        const start = new Date(`${startDate || '2000-01-01'}T00:00:00-06:00`);
+        const end = new Date(`${endDate || '2100-12-31'}T23:59:59-06:00`);
+
+        const whereSale = {
+            createdAt: { gte: start, lte: end },
+            reversedAt: null
+        };
+        if (branchId) whereSale.branchId = parseInt(branchId);
+        if (sellerId) whereSale.userId = parseInt(sellerId);
+
+        const sales = await prisma.saleH.findMany({
+            where: whereSale,
+            include: {
+                user: { select: { id: true, name: true } },
+                details: {
+                    include: { product: { select: { name: true, commissionType: true, commissionValue: true } } }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Agrupar por vendedor
+        const bySeller: Record<number, any> = {};
+        for (const sale of sales) {
+            const uid = sale.userId;
+            if (!bySeller[uid]) {
+                bySeller[uid] = {
+                    userId: uid,
+                    sellerName: sale.user?.name || 'Sistema',
+                    totalSales: 0,
+                    totalCommission: 0,
+                    saleCount: 0,
+                    details: []
+                };
+            }
+            const s = bySeller[uid];
+            s.saleCount++;
+            s.totalSales += Number(sale.total) + Number(sale.shipping || 0);
+            for (const d of sale.details) {
+                s.totalCommission += Number(d.commission || 0);
+                s.details.push({
+                    saleId: sale.id,
+                    date: sale.createdAt,
+                    productName: d.product?.name || 'Producto',
+                    quantity: d.quantity,
+                    unitPrice: d.unitPrice,
+                    subtotal: d.subtotal,
+                    commission: d.commission || 0
+                });
+            }
+        }
+
+        res.json(Object.values(bySeller));
+    } catch (error) {
+        console.error('Sales by seller error:', error);
+        res.status(500).json({ message: 'Error al obtener ventas por vendedor' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
-    getReports
+    getReports,
+    getSalesBySeller
 };

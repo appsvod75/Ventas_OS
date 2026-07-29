@@ -148,6 +148,7 @@ const AdminDashboard: React.FC = () => {
         audit: { title: 'Auditoría', icon: <BarChart3 size={22} />, path: '/audit', desc: 'Registro de actividades' },
         shipments: { title: 'Envíos', icon: <Truck size={22} />, path: '/shipments', desc: 'Entregas programadas', badge: pendingShipments },
         lookup: { title: 'Consultar', icon: <Search size={22} />, path: '/lookup', desc: 'Búsqueda de productos' },
+        sellerReport: { title: 'Comisiones', icon: <BarChart3 size={22} />, path: '/seller-report', desc: 'Ventas por vendedor' },
     };
 
     const allModules = Object.values(allDashboardModules).reduce((acc: any, m: any) => {

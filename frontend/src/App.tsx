@@ -28,6 +28,7 @@ import DailySummary from './pages/DailySummary';
 import Transfers from './pages/Transfers';
 import Shipments from './pages/Shipments';
 import ProductLookupPage from './pages/ProductLookupPage';
+import SellerReport from './pages/SellerReport';
 import { CartProvider } from './context/CartContext';
 import PWAInstallBanner from './components/PWAInstallBanner';
 import { getUser, hasRole, ROLES } from './utils/permissions';
@@ -329,6 +330,14 @@ const App: React.FC = () => {
                         element={
                             <ProtectedRoute>
                                 <ProductLookupPage />
+                            </ProtectedRoute>
+                        }
+                    />
+                    <Route
+                        path="/seller-report"
+                        element={
+                            <ProtectedRoute>
+                                <SellerReport />
                             </ProtectedRoute>
                         }
                     />

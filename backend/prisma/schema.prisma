@@ -243,6 +243,7 @@ model SaleD {
   subtotal   Float
   notes      String?
   customData String?
+  commission Float    @default(0)
   saleH      SaleH   @relation(fields: [saleHId], references: [id], onDelete: Cascade)
   product    Product @relation(fields: [productId], references: [id])
 }
