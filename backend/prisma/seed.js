@@ -175,7 +175,7 @@ async function main() {
         { key: 'transfers', label: 'Traslados', enabled: false },
         { key: 'projections', label: 'Proyecciones', enabled: false },
         { key: 'lookup', label: 'Consultar', enabled: true },
-        { key: 'sellerReport', label: 'Comisiones', enabled: false }
+        { key: 'sellerReport', label: 'Comisiones', enabled: true }
     ];
     const defaultDashboardConfig = [
         { key: 'pos', label: 'Punto de Venta' },
