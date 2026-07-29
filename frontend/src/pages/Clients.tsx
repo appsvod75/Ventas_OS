@@ -21,6 +21,9 @@ const Clients: React.FC = () => {
     const [deleteTarget, setDeleteTarget] = useState<any>(null);
     const [deletePin, setDeletePin] = useState('');
     const [isDeleting, setIsDeleting] = useState(false);
+    const [editPin, setEditPin] = useState('');
+    const [showEditPinModal, setShowEditPinModal] = useState(false);
+    const [pendingEdit, setPendingEdit] = useState(false);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -69,19 +72,45 @@ const Clients: React.FC = () => {
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
         try {
             if (editingId) {
-                await clientApi.updateClient(editingId, formData);
+                if (user.role !== 'Super Admin' && user.role !== 'Admin' && !editPin) {
+                    setShowEditPinModal(true);
+                    return;
+                }
+                await clientApi.updateClient(editingId, { ...formData, pin: editPin || undefined });
                 toast.success('Cliente actualizado con éxito');
+                setEditPin('');
             } else {
                 await clientApi.createClient(formData);
                 toast.success('Cliente creado con éxito');
             }
             setShowModal(false);
             fetchClients();
-        } catch (error) {
-            toast.error('Error al guardar cliente');
-            console.error(error);
+        } catch (error: any) {
+            const msg = error.response?.data?.message || 'Error al guardar cliente';
+            if (msg.includes('PIN')) { setEditPin(''); setShowEditPinModal(true); }
+            toast.error(msg);
+        }
+    };
+
+    const handleEditPinSubmit = async () => {
+        if (!editPin) return;
+        setPendingEdit(true);
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            await clientApi.updateClient(editingId!, { ...formData, pin: editPin });
+            toast.success('Cliente actualizado con éxito');
+            setShowEditPinModal(false);
+            setEditPin('');
+            setShowModal(false);
+            fetchClients();
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || 'PIN incorrecto');
+            setEditPin('');
+        } finally {
+            setPendingEdit(false);
         }
     };
 
@@ -723,6 +752,33 @@ const Clients: React.FC = () => {
                                 }
                             }} disabled={!deletePin || isDeleting} style={{ flex: 1.5, padding: '0.8rem', borderRadius: '12px', background: !deletePin || isDeleting ? '#334155' : '#ef4444', color: 'white', border: 'none', fontWeight: 800, cursor: !deletePin || isDeleting ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
                                 {isDeleting ? 'Eliminando...' : 'Eliminar'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showEditPinModal && (
+                <div className="modal-overlay" style={{ zIndex: 5000 }} onClick={() => setShowEditPinModal(false)}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: '#1e293b', borderRadius: '24px', padding: '2rem', width: '400px', maxWidth: '90vw', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <ShieldAlert size={28} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+                            <div>
+                                <h3 style={{ color: '#8b5cf6', margin: 0, fontSize: '1.2rem', fontWeight: 900 }}>PIN de Administrador</h3>
+                                <p style={{ color: '#94a3b8', fontSize: '0.8rem', margin: '0.25rem 0 0' }}>Este cliente ya tiene ventas, requiere PIN de admin</p>
+                            </div>
+                        </div>
+                        <input type="password" autoComplete="off" autoFocus value={editPin}
+                            onChange={e => setEditPin(e.target.value)}
+                            placeholder="PIN de seguridad"
+                            maxLength={6}
+                            onKeyDown={e => e.key === 'Enter' && handleEditPinSubmit()}
+                            style={{ width: '100%', padding: '1rem', borderRadius: '12px', background: '#0f172a', border: '1px solid #334155', color: 'white', fontSize: '1.5rem', textAlign: 'center', letterSpacing: '0.3em', fontWeight: 'bold', outline: 'none', boxSizing: 'border-box', marginBottom: '1.5rem' }}
+                        />
+                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                            <button onClick={() => { setShowEditPinModal(false); setEditPin(''); }} style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}>Cancelar</button>
+                            <button onClick={handleEditPinSubmit} disabled={!editPin || pendingEdit} style={{ flex: 1.5, padding: '0.8rem', borderRadius: '12px', background: !editPin || pendingEdit ? '#334155' : '#8b5cf6', color: 'white', border: 'none', fontWeight: 800, cursor: !editPin || pendingEdit ? 'not-allowed' : 'pointer', fontSize: '0.85rem' }}>
+                                {pendingEdit ? 'Validando...' : 'Autorizar'}
                             </button>
                         </div>
                     </div>

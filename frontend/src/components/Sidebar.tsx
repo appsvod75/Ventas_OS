@@ -95,7 +95,7 @@ const Sidebar: React.FC = () => {
         if ((conf.key === 'settings' || conf.key === 'users') && !isAdmin) return null;
         if (conf.key === 'audit' && !isSuperAdmin) return null;
         // Ventas solo ve items permitidos
-        if (isVentas && !['pos','summary','inventory','products','clients','expenses','history','lookup'].includes(conf.key)) return null;
+        if (isVentas && !['pos','lookup','clients','history'].includes(conf.key)) return null;
         return baseItem;
       })
       .filter(Boolean)

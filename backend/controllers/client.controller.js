@@ -40,8 +40,20 @@ const createClient = async (req, res) => {
 
 const updateClient = async (req, res) => {
     const { id } = req.params;
-    const { name, documentId, phone, email, address, isActive } = req.body;
+    const { name, documentId, phone, email, address, isActive, pin } = req.body;
     try {
+        // Check if client has sales and user is not admin
+        if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
+            const saleCount = await prisma.saleH.count({ where: { clientId: parseInt(id) } });
+            if (saleCount > 0) {
+                if (!pin) return res.status(400).json({ message: 'PIN requerido para editar cliente con ventas' });
+                const admin = await prisma.user.findFirst({ where: { role: { name: { in: ['Super Admin', 'Admin'] } }, isActive: true } });
+                if (!admin || !(await require('bcryptjs').compare(pin, admin.pinHash))) {
+                    return res.status(401).json({ message: 'PIN incorrecto' });
+                }
+            }
+        }
+
         const updatedClient = await prisma.client.update({
             where: { id: parseInt(id) },
             data: {
@@ -53,10 +65,10 @@ const updateClient = async (req, res) => {
                 isActive: isActive !== undefined ? isActive : true
             }
         });
-        res.json({ message: 'Client updated successfully', data: updatedClient });
+        res.json({ message: 'Cliente actualizado correctamente', data: updatedClient });
     } catch (error) {
         console.error('Error updating client:', error);
-        res.status(500).json({ message: 'Error updating client', error: error.message });
+        res.status(500).json({ message: 'Error al actualizar cliente', error: error.message });
     }
 };
 

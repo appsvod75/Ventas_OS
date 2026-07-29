@@ -167,6 +167,11 @@ const getSalesHistory = async (req, res) => {
             whereClause.branchId = parseInt(targetBranchId);
         }
 
+        // Ventas solo ve sus propias ventas
+        if (req.user.role === 'Ventas') {
+            whereClause.userId = req.user.id;
+        }
+
         // --- Lógica de Filtrado por Fecha (Fixed with Offset -06:00) ---
         // Forzamos el offset para que la medianoche sea la local.
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
