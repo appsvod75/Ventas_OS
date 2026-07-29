@@ -900,11 +900,13 @@ const Settings: React.FC = () => {
                             </p>
                             <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
                                 {roles.map(r => (
-                                    <button key={r.id} onClick={() => {
+                                    <button key={r.id} onClick={async () => {
                                         setSelectedRole(r);
-                                        if (allPerms.length === 0) {
-                                            adminAuthApi.getPermissions().then(res => setAllPerms(res.data)).catch(() => {});
-                                        }
+                                        try {
+                                            const res = await adminAuthApi.getPermissions();
+                                            const rolePerms = r.rolePermissions?.map((rp: any) => rp.permission?.key || rp.permissionKey) || [];
+                                            setAllPerms(res.data.map((p: any) => ({ ...p, enabled: rolePerms.includes(p.key) })));
+                                        } catch {}
                                     }}
                                     style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', border: selectedRole?.id === r.id ? '2px solid #8b5cf6' : '1px solid #334155', background: selectedRole?.id === r.id ? 'rgba(139,92,246,0.1)' : '#0f172a', color: selectedRole?.id === r.id ? '#a78bfa' : '#94a3b8', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}>
                                         {r.name}
@@ -929,11 +931,10 @@ const Settings: React.FC = () => {
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.3rem' }}>
                                         {allPerms.map(p => {
-                                            const enabled = selectedRole.rolePermissions?.some((rp: any) => rp.permission?.key === p.key || rp.permissionKey === p.key);
                                             return (
-                                                <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.5rem', borderRadius: '6px', cursor: 'pointer', background: enabled ? 'rgba(139,92,246,0.05)' : 'transparent', fontSize: '0.78rem', color: enabled ? 'white' : '#64748b' }}>
-                                                    <input type="checkbox" checked={!!enabled}
-                                                        onChange={() => setAllPerms(allPerms.map(pp => pp.key === p.key ? { ...pp, enabled: !enabled } : pp))}
+                                                <label key={p.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.5rem', borderRadius: '6px', cursor: 'pointer', background: p.enabled ? 'rgba(139,92,246,0.05)' : 'transparent', fontSize: '0.78rem', color: p.enabled ? 'white' : '#64748b' }}>
+                                                    <input type="checkbox" checked={!!p.enabled}
+                                                        onChange={() => setAllPerms(allPerms.map(pp => pp.key === p.key ? { ...pp, enabled: !pp.enabled } : pp))}
                                                         style={{ accentColor: '#8b5cf6', width: '14px', height: '14px' }} />
                                                     {p.name || p.key}
                                                 </label>
