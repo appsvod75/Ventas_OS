@@ -158,6 +158,12 @@ Ver `WALKTHROUGH.md` para el flujo completo.
 - Puerto backend: `3019`
 - URL producción: `https://minegocio.luckyapps.online`
 
+### ⚠️ REGLA DE ORO (Aprendida con sangre)
+**Usar FileZilla siempre.** Nada de rsync, scp ni comandos para subir archivos. 
+Solo se permite terminal en VPS para: `pm2 restart ventasee-os` y `pm2 logs ventasee-os`.
+
+SQLite no perdona: un archivo mal subido y los datos vuelan. FileZilla muestra exactamente qué estás subiendo y a dónde.
+
 ### 🖥️ FileZilla — Opción recomendada (visual)
 Conectate con: `root@64.23.176.98` (puerto 22, SFTP).
 
