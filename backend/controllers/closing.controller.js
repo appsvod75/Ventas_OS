@@ -102,7 +102,8 @@ const getTodaySummary = async (req, res) => {
             createdAt: {
                 gte: start,
                 lte: end
-            }
+            },
+            reversedAt: null
         };
 
         if (user_role !== 'Super Admin' && user_role !== 'Admin') {

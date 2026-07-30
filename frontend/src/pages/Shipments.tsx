@@ -125,7 +125,6 @@ const Shipments: React.FC = () => {
                                         <div style={{ minWidth: 0 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
                                                 <strong style={{ fontSize: '0.95rem' }}>#{s.id} — {s.client?.name || 'Cliente Varios'}</strong>
-                                                <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', background: cfg.bg, color: cfg.color, fontWeight: 800 }}>{cfg.label}</span>
                                                 {isOverdue && <span style={{ fontSize: '0.6rem', color: '#ef4444', fontWeight: 800 }}>ATRASADO</span>}
                                             </div>
                                             <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#64748b' }}>
@@ -138,6 +137,7 @@ const Shipments: React.FC = () => {
                                         </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.7rem', padding: '3px 10px', borderRadius: '6px', background: cfg.bg, color: cfg.color, fontWeight: 800, whiteSpace: 'nowrap' }}>{cfg.label}</span>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', marginRight: '0.5rem' }}>
                                             {editingDelivery === s.id ? (
                                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
