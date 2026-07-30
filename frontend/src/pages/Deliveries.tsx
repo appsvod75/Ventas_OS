@@ -28,12 +28,14 @@ const Deliveries: React.FC = () => {
         <div className="products-page">
             <Sidebar />
             <main className="products-main" style={{ padding: '2rem 4rem', overflow: 'auto' }}>
-                <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                    <div>
-                        <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Deliverys</h1>
-                        <p style={{ color: '#94a3b8' }}>Repartidores registrados</p>
+                <header className="page-header" style={{ marginBottom: '2rem' }}>
+                    <div className="header-text">
+                        <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Deliverys</h1>
+                        <p style={{ color: '#94a3b8', margin: '0.25rem 0 0' }}>Repartidores registrados</p>
                     </div>
-                    <button style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }} onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
+                    <div className="header-tools">
+                        <button className="btn-erp" onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
+                    </div>
                 </header>
                 <div className="products-table-wrapper">
                     <table className="products-table">
