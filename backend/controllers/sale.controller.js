@@ -133,7 +133,7 @@ const createSale = async (req, res) => {
                     dueDate: due_date ? new Date(due_date) : null,
                     shippingDate: shipping_date ? new Date(shipping_date) : null,
                     fulfillmentStatus: fulfillment_status || 'VENDIDO',
-                    ...(delivery_id && { delivery: { connect: { id: parseInt(delivery_id) } } }),
+                    ...(delivery_id && { deliveryId: parseInt(delivery_id) }),
                     balance: balance !== undefined ? Number(balance) : (payment_method === 'CREDITO' ? finalTotal : 0),
                     amountTendered: Number(amount_tendered) || finalTotal,
                     change: Number(change) || 0,
