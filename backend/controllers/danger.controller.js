@@ -135,8 +135,8 @@ const backupDatabase = async (req, res) => {
         const files = [dbPath, path.join(dbDir, dbBase + '.db-wal'), path.join(dbDir, dbBase + '.db-shm')]
             .filter(f => fs.existsSync(f));
 
-        const archiver = require('archiver');
-        const tar = archiver('tar', { gzip: true });
+        const { TarArchive } = require('archiver');
+        const tar = new TarArchive({ gzip: true });
         for (const f of files) {
             tar.file(f, { name: path.basename(f) });
         }
