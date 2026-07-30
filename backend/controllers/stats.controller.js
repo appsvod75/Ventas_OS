@@ -329,7 +329,7 @@ const getSalesBySeller = async (req, res) => {
         });
 
         // Agrupar por vendedor
-        const bySeller: Record<number, any> = {};
+        const bySeller = {};
         for (const sale of sales) {
             const uid = sale.userId;
             if (!bySeller[uid]) {
