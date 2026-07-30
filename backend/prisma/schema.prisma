@@ -72,7 +72,7 @@ model User {
   reversedSales  SaleH[]      @relation("ReversedSales")
   cashOpenings   CashOpening[] @relation("CashOpeningUser")
   cashClosings   CashOpening[] @relation("CashClosingUser")
-  createdClients Client[]     @relation(fields: [createdById], references: [id])
+  createdClients Client[]
   transfers      Transfer[]
   purchases      PurchaseH[]
   branch         Branch?         @relation(fields: [branchId], references: [id])
