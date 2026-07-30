@@ -1,5 +1,7 @@
 const prisma = require('../db');
 const bcrypt = require('bcryptjs');
+const fs = require('fs');
+const path = require('path');
 const { PERMISSIONS, hasPermission } = require('../utils/permissions');
 
 const resetSales = async (req, res) => {
@@ -120,9 +122,40 @@ const resetSaleCounter = async (req, res) => {
     }
 };
 
+const backupDatabase = async (req, res) => {
+    try {
+        const envPath = path.join(__dirname, '..', '.env');
+        const envContent = fs.readFileSync(envPath, 'utf-8');
+        const match = envContent.match(/DATABASE_URL="file:(.+?)"/);
+        if (!match) return res.status(500).json({ message: 'No se pudo determinar la ruta de la DB' });
+
+        const dbPath = match[1].replace(/\\/g, '');
+        const dbDir = path.dirname(dbPath);
+        const dbBase = path.basename(dbPath, '.db');
+        const files = [dbPath, path.join(dbDir, dbBase + '.db-wal'), path.join(dbDir, dbBase + '.db-shm')]
+            .filter(f => fs.existsSync(f));
+
+        const archiver = require('archiver');
+        const tar = archiver('tar', { gzip: true });
+        for (const f of files) {
+            tar.file(f, { name: path.basename(f) });
+        }
+        tar.finalize();
+
+        const date = new Date().toISOString().slice(0, 10);
+        res.setHeader('Content-Type', 'application/gzip');
+        res.setHeader('Content-Disposition', `attachment; filename="backup-ventasee-${date}.tar.gz"`);
+        tar.pipe(res);
+    } catch (error) {
+        console.error('Backup error:', error);
+        res.status(500).json({ message: 'Error al generar backup' });
+    }
+};
+
 module.exports = {
     resetSales,
     resetInventory,
     resetProducts,
-    resetSaleCounter
+    resetSaleCounter,
+    backupDatabase
 };

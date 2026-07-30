@@ -13,5 +13,6 @@ router.post('/danger/reset-sales', authMiddleware, requirePermission(PERMISSIONS
 router.post('/danger/reset-inventory', authMiddleware, requirePermission(PERMISSIONS.ALL), dangerController.resetInventory);
 router.post('/danger/reset-products', authMiddleware, requirePermission(PERMISSIONS.ALL), dangerController.resetProducts);
 router.post('/danger/reset-sale-counter', authMiddleware, requirePermission(PERMISSIONS.ALL), dangerController.resetSaleCounter);
+router.get('/danger/backup', authMiddleware, requirePermission(PERMISSIONS.ALL), dangerController.backupDatabase);
 
 module.exports = router;
