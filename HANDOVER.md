@@ -134,7 +134,8 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 | **Animación cascada** | Módulos del dashboard aparecen uno tras otro con glow azul |
 
 ### ⏳ Pendiente
-- Agregar hora al nombre del archivo de backup
+- Revisar reversión: gasto creado incluye envío, debería ser solo productos (el envío va aparte)
+- Refinar lógica de reembolso en anulación
 
 ### 📦 Archivos nuevos en esta sesión
 - `frontend/src/pages/ProductLookupPage.tsx`
