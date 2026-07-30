@@ -3,7 +3,7 @@ const { logAudit } = require('../utils/audit');
 const { getIO } = require('../services/socketManager');
 
 const createSale = async (req, res) => {
-    let { branch_id, items, payment_method, discount = 0, client_id, due_date, amount_tendered, change, customDate, shipping = 0, balance, shipping_date, fulfillment_status } = req.body;
+    let { branch_id, items, payment_method, discount = 0, client_id, due_date, amount_tendered, change, customDate, shipping = 0, balance, shipping_date, fulfillment_status, delivery_id } = req.body;
     let user_id = req.body.user_id || req.user.id;
     const user_role = req.user.role;
     // Solo admin puede asignar venta a otro usuario
@@ -133,6 +133,7 @@ const createSale = async (req, res) => {
                     dueDate: due_date ? new Date(due_date) : null,
                     shippingDate: shipping_date ? new Date(shipping_date) : null,
                     fulfillmentStatus: fulfillment_status || 'VENDIDO',
+                    ...(delivery_id && { delivery: { connect: { id: parseInt(delivery_id) } } }),
                     balance: balance !== undefined ? Number(balance) : (payment_method === 'CREDITO' ? finalTotal : 0),
                     amountTendered: Number(amount_tendered) || finalTotal,
                     change: Number(change) || 0,

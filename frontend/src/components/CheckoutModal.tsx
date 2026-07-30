@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, MapPin, Calendar, CreditCard, Banknote, UserPlus, X, ShoppingCart, Plus, CheckCircle2, ChevronRight, Save, Building2, Delete, User, Phone, Mail } from 'lucide-react';
+import { Search, MapPin, Calendar, CreditCard, Banknote, UserPlus, X, ShoppingCart, Plus, CheckCircle2, ChevronRight, Save, Building2, Delete, User, Phone, Mail, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clientApi, adminAuthApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -11,7 +11,7 @@ interface CheckoutModalProps {
     orderTotal: number;
     shipping?: number;
     onClose: () => void;
-    onConfirm: (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number) => void;
+    onConfirm: (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number, deliveryId?: number) => void;
 }
 
 const PaymentMethod = {
@@ -37,6 +37,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
     const [isPartialPayment, setIsPartialPayment] = useState(false);
     const [sellers, setSellers] = useState<any[]>([]);
     const [selectedSellerId, setSelectedSellerId] = useState<number | null>(null);
+    const [deliveries, setDeliveries] = useState<any[]>([]);
+    const [searchDelivery, setSearchDelivery] = useState('');
+    const [selectedDelivery, setSelectedDelivery] = useState<any | null>(null);
+    const [showNewDeliveryForm, setShowNewDeliveryForm] = useState(false);
+    const [newDeliveryName, setNewDeliveryName] = useState('');
+    const [isDeliverySearchFocused, setIsDeliverySearchFocused] = useState(false);
+    const [deliveryFiltered, setDeliveryFiltered] = useState<any[]>([]);
 
     const isTablet = true; // FORZADO PARA PC (Videos): window.matchMedia('(min-width: 901px) and (max-width: 1300px)').matches;
 
@@ -57,11 +64,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
         setSaleDate(format(new Date(), "yyyy-MM-dd'T'HH:mm"));
         const loadData = async () => {
             try {
-                const [clientsRes, usersRes] = await Promise.all([
+                const [clientsRes, usersRes, deliveriesRes] = await Promise.all([
                     clientApi.getClients(),
-                    isAdmin ? adminAuthApi.getUsers() : Promise.resolve({ data: [] })
+                    isAdmin ? adminAuthApi.getUsers() : Promise.resolve({ data: [] }),
+                    import('../services/api').then(m => m.deliveryApi.getAll()).catch(() => ({ data: [] }))
                 ]);
                 setClients(clientsRes.data);
+                setDeliveries(deliveriesRes.data || []);
                 if (isAdmin && usersRes.data?.length) {
                     setSellers(usersRes.data);
                     setSelectedSellerId(usersRes.data.find((u: any) => u.id === user.id)?.id || user.id);
@@ -117,15 +126,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
     const confirmSale = () => {
         if (!canConfirm) return;
         const shipDate = shipping ? (shippingDate || undefined) : undefined;
+        const delId = selectedDelivery?.id || undefined;
         if (isPartialPayment) {
             const partialAmount = parseFloat(amountTendered) || 0;
             const paymentLabel = method + '+CREDITO';
-            onConfirm(paymentLabel, partialAmount, selectedClient, dueDate, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined);
+            onConfirm(paymentLabel, partialAmount, selectedClient, dueDate, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined, delId);
             return;
         }
         const finalTendered = method === PaymentMethod.CASH ? (parseFloat(amountTendered) || orderTotal) : orderTotal;
-        onConfirm(method, finalTendered, selectedClient, method === PaymentMethod.CREDIT ? dueDate : undefined, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined);
+        onConfirm(method, finalTendered, selectedClient, method === PaymentMethod.CREDIT ? dueDate : undefined, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined, delId);
     };
+
+    useEffect(() => {
+        setDeliveryFiltered(deliveries.filter((d: any) => 
+            d.name.toLowerCase().includes(searchDelivery.toLowerCase())
+        ));
+    }, [searchDelivery, deliveries]);
 
     const filteredClients = clients.filter(c =>
         c.name.toLowerCase().includes(searchClient.toLowerCase()) ||
@@ -441,6 +457,50 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                 </div>
                             </div>
                         )}
+
+                        <div className="section-card">
+                            <h4 className="section-title"><Truck size={14} /> DELIVERY</h4>
+                            {selectedDelivery ? (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', padding: '0.4rem 0.75rem' }}>
+                                    <span style={{ color: '#10b981', fontWeight: 700, fontSize: '0.8rem' }}>{selectedDelivery.name}</span>
+                                    <button onClick={() => setSelectedDelivery(null)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
+                                </div>
+                            ) : (
+                                <div style={{ position: 'relative' }}>
+                                    <input type="text" placeholder="Buscar delivery..." value={searchDelivery} 
+                                        onChange={e => setSearchDelivery(e.target.value)}
+                                        onFocus={() => setIsDeliverySearchFocused(true)}
+                                        onBlur={() => setTimeout(() => setIsDeliverySearchFocused(false), 200)}
+                                        style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.4rem 0.6rem', color: 'white', fontSize: '0.75rem', outline: 'none', boxSizing: 'border-box' }} />
+                                    {isDeliverySearchFocused && searchDelivery && deliveryFiltered.length > 0 && (
+                                        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', marginTop: '2px', maxHeight: '150px', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                                            {deliveryFiltered.map((d: any) => (
+                                                <div key={d.id} onClick={() => { setSelectedDelivery(d); setSearchDelivery(''); }}
+                                                    style={{ padding: '0.4rem 0.6rem', cursor: 'pointer', borderBottom: '1px solid #0f172a', fontSize: '0.75rem', color: '#e2e8f0', fontWeight: 600, transition: 'background 0.15s' }}
+                                                    onMouseEnter={e => e.currentTarget.style.background = '#0f172a'}
+                                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                                    {d.name} {d.phone ? `(${d.phone})` : ''}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {isDeliverySearchFocused && searchDelivery && deliveryFiltered.length === 0 && (
+                                        <div onClick={async () => {
+                                            if (!searchDelivery.trim()) return;
+                                            try {
+                                                const { deliveryApi } = await import('../services/api');
+                                                const res = await deliveryApi.create({ name: searchDelivery.trim() });
+                                                setDeliveries([...deliveries, res.data]);
+                                                setSelectedDelivery(res.data);
+                                                setSearchDelivery('');
+                                            } catch {}
+                                        }} style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', marginTop: '2px', padding: '0.5rem 0.6rem', cursor: 'pointer', color: '#3b82f6', fontWeight: 700, fontSize: '0.75rem', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                                            <Plus size={14} style={{ display: 'inline', marginRight: '4px' }} /> Crear "{searchDelivery}"
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
                         <div className={`section-card amount-card ${isPartialPayment ? 'partial' : ''}`}>
                             <h4 className="section-title"><Banknote size={14} /> {isPartialPayment ? 'ABONO HOY' : 'MONTO RECIBIDO'}</h4>

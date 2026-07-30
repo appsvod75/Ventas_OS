@@ -244,9 +244,11 @@ model SaleH {
     reversedAt          DateTime?
     reversalReason      String?
     reversedById        Int?
-    paymentApplications PaymentApplication[]
-    details             SaleD[]
-    user                User                 @relation("UserSales", fields: [userId], references: [id])
+  paymentApplications PaymentApplication[]
+  details             SaleD[]
+  deliveryId          Int?
+  delivery            Delivery?            @relation(fields: [deliveryId], references: [id])
+  user                User                 @relation("UserSales", fields: [userId], references: [id])
     branch              Branch               @relation(fields: [branchId], references: [id])
     client              Client?              @relation(fields: [clientId], references: [id])
     reversedBy          User?                @relation("ReversedSales", fields: [reversedById], references: [id])

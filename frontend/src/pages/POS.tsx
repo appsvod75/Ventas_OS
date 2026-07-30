@@ -116,7 +116,7 @@ const POS: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const handleConfirmCheckout = async (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number) => {
+  const handleConfirmCheckout = async (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number, deliveryId?: number) => {
     if (cart.length === 0) return;
 
     const cartTotal = cart.reduce((sum, item) => {
@@ -141,6 +141,7 @@ const POS: React.FC = () => {
       shipping: shippingCost,
       shipping_date: shippingCost > 0 && shippingDate ? shippingDate : null,
       fulfillment_status: shippingCost > 0 && shippingDate ? 'VENDIDO' : undefined,
+      delivery_id: deliveryId,
       items: cart.map(item => ({
         product_id: item.id,
         quantity: item.selectedVariant ? parseInt(item.quantity as any) * parseInt(item.selectedVariant.quantity as any) : parseInt(item.quantity as any),
