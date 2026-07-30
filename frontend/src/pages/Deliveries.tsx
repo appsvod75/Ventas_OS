@@ -37,12 +37,21 @@ const Deliveries: React.FC = () => {
                 </header>
                 <div className="products-table-wrapper">
                     <table className="products-table">
-                        <thead><tr><th>NOMBRE</th><th>TELÉFONO</th><th style={{ textAlign: 'right' }}>ACCIONES</th></tr></thead>
+                        <thead><tr><th>NOMBRE</th><th>TELÉFONO</th><th>ESTADO</th><th style={{ textAlign: 'right' }}>ACCIONES</th></tr></thead>
                         <tbody>
                             {items.map(d => (
                                 <tr key={d.id}>
                                     <td><span style={{ fontWeight: 700, color: '#e2e8f0' }}>{d.name}</span></td>
                                     <td style={{ color: '#94a3b8' }}>{d.phone || '---'}</td>
+                                    <td>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', width: 'fit-content' }}>
+                                            <input type="checkbox" checked={d.isActive} onChange={async () => {
+                                                await deliveryApi.update(d.id, { isActive: !d.isActive });
+                                                fetchData();
+                                            }} style={{ accentColor: '#10b981', width: '16px', height: '16px', cursor: 'pointer' }} />
+                                            <span style={{ fontSize: '0.7rem', fontWeight: 700, color: d.isActive ? '#10b981' : '#64748b' }}>{d.isActive ? 'ACTIVO' : 'INACTIVO'}</span>
+                                        </label>
+                                    </td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button className="btn-icon-table edit" onClick={() => { setEditing(d); setForm({ name: d.name, phone: d.phone || '' }); setShowModal(true); }}><Edit3 size={16} /></button>
                                     </td>
