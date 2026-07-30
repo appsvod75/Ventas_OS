@@ -206,6 +206,7 @@ model Delivery {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   clients   Client[]
+  sales     SaleH[]
 }
 
 model Client {

@@ -245,6 +245,7 @@ const Settings: React.FC = () => {
                             { key: 'projections', label: 'Proyecciones', enabled: false },
                             { key: 'lookup', label: 'Consultar', enabled: true },
                             { key: 'sellerReport', label: 'Comisiones', enabled: true },
+                            { key: 'deliveries', label: 'Deliverys', enabled: true },
                         ];
                         const savedKeys = new Set(saved.map((i: any) => i.key));
                         const newItems = allSidebarItems.filter(i => !savedKeys.has(i.key));
@@ -276,6 +277,7 @@ const Settings: React.FC = () => {
                             { key: 'shipments', label: 'Envíos' },
                             { key: 'lookup', label: 'Consultar' },
                             { key: 'sellerReport', label: 'Comisiones' },
+                            { key: 'deliveries', label: 'Deliverys' },
                         ];
                         const savedKeys = new Set(saved.map((i: any) => i.key));
                         const newItems = allDashItems.filter(i => !savedKeys.has(i.key));
