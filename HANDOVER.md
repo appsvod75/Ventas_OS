@@ -133,8 +133,8 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 | **Visor de imagen** | Botón de imagen en detalle de envío, abre modal con foto del producto/diseño |
 | **Animación cascada** | Módulos del dashboard aparecen uno tras otro con glow azul |
 
-### ⏳ Pendiente de confirmación
-- Delivery en checkout (Opción B) en vez de/asignación en cliente (esperando respuesta de admin)
+### ⏳ Pendiente
+- Agregar hora al nombre del archivo de backup
 
 ### 📦 Archivos nuevos en esta sesión
 - `frontend/src/pages/ProductLookupPage.tsx`

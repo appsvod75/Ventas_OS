@@ -142,7 +142,7 @@ const backupDatabase = async (req, res) => {
         }
         zip.finalize();
 
-        const date = new Date().toISOString().slice(0, 10);
+        const date = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', `attachment; filename="backup-ventasee-${date}.zip"`);
         zip.pipe(res);
