@@ -15,17 +15,16 @@ const getDashboardStats = async (req, res) => {
             createdAt: {
                 gte: start,
                 lte: end
-            },
-            reversedAt: null
+            }
         };
 
         if (branchId) {
             whereClause.branchId = parseInt(branchId);
         }
 
-        // 1. Get Sales
+        // 1. Get Sales (excluye anuladas)
         const sales = await prisma.saleH.findMany({
-            where: whereClause,
+            where: { ...whereClause, reversedAt: null },
             include: {
                 branch: { select: { name: true } }
             }
