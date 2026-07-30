@@ -3,7 +3,13 @@ const { logAudit } = require('../utils/audit');
 
 const getClients = async (req, res) => {
     try {
+        const where = {};
+        if (req.user.role === 'Ventas') {
+            where.createdById = req.user.id;
+        }
         const clients = await prisma.client.findMany({
+            where,
+            include: { createdBy: { select: { name: true } } },
             orderBy: { name: 'asc' }
         });
         res.json(clients);
@@ -27,6 +33,7 @@ const createClient = async (req, res) => {
                 email: email || null,
                 address: address || null,
                 isActive: isActive !== undefined ? isActive : true,
+                createdById: req.user.id,
                 ...(deliveryId && { delivery: { connect: { id: parseInt(deliveryId) } } })
             }
         });

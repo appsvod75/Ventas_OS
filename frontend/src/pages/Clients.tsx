@@ -35,12 +35,20 @@ const Clients: React.FC = () => {
         deliveryId: null as number | null
     });
     const [deliveries, setDeliveries] = useState<any[]>([]);
+    const [users, setUsers] = useState<any[]>([]);
+    const [sellerFilter, setSellerFilter] = useState('');
 
     const [activeKeyboard, setActiveKeyboard] = useState<'qwerty' | 'numeric' | null>(null);
     const [activeField, setActiveField] = useState<string | null>(null);
 
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const isAdmin = user?.role === 'Super Admin' || user?.role === 'Admin';
+
     useEffect(() => {
         fetchClients();
+        if (isAdmin) {
+            import('../services/api').then(m => m.adminAuthApi.getUsers()).then(res => setUsers(res.data)).catch(() => {});
+        }
     }, []);
 
     const fetchClients = async () => {
@@ -144,8 +152,9 @@ const Clients: React.FC = () => {
     };
 
     const filteredClients = clients.filter(c =>
-        (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
-        (c.documentId && c.documentId.toLowerCase().includes(search.toLowerCase()))
+        ((c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (c.documentId && c.documentId.toLowerCase().includes(search.toLowerCase()))) &&
+        (!sellerFilter || c.createdById === Number(sellerFilter))
     );
 
     const getAvatarColor = (name: string) => {
@@ -226,6 +235,13 @@ const Clients: React.FC = () => {
                                 </button>
                             )}
                         </div>
+                        {isAdmin && users.length > 0 && (
+                            <select value={sellerFilter} onChange={e => setSellerFilter(e.target.value)}
+                                style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', fontWeight: 700, outline: 'none', minWidth: '130px' }}>
+                                <option value="">Vendedor: Todos</option>
+                                {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            </select>
+                        )}
                         <button className="btn-add" onClick={handleOpenCreate}>
                             <UserPlus size={20} />
                             <span>Nuevo Cliente</span>
@@ -241,6 +257,7 @@ const Clients: React.FC = () => {
                                 <th>DOCUMENTO / DNI</th>
                                 <th>CONTACTO</th>
                                 <th>DIRECCIÓN</th>
+                                {isAdmin && <th>VENDEDOR</th>}
                                 <th>ESTADO</th>
                                 <th style={{ textAlign: 'right' }}>ACCIONES</th>
                             </tr>
@@ -300,6 +317,7 @@ const Clients: React.FC = () => {
                                             <span className="text-sm truncate-2" style={{ lineHeight: '1.2' }}>{client.address || 'Sin dirección registrada'}</span>
                                         </div>
                                     </td>
+                                    {isAdmin && <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{client.createdBy?.name || '---'}</td>}
                                     <td>
                                         <span className={`status-badge ${client.isActive ? 'ok' : 'low'}`} style={{ padding: '6px 14px', border: '1px solid currentColor' }}>
                                             {client.isActive ? 'ACTIVO' : 'INACTIVO'}

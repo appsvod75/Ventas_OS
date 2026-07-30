@@ -16,7 +16,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 const Shipments: React.FC = () => {
     const [shipments, setShipments] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('');
+    const [tab, setTab] = useState<'pending' | 'done'>('pending');
     const [labelShipment, setLabelShipment] = useState<any>(null);
     const [config, setConfig] = useState<any>({});
     const [editingDelivery, setEditingDelivery] = useState<number | null>(null);
@@ -27,8 +27,7 @@ const Shipments: React.FC = () => {
     const fetchShipments = async () => {
         try {
             setLoading(true);
-            const params = filter ? `?status=${filter}` : '';
-            const res = await api.get(`/sales/shipments/list${params}`);
+            const res = await api.get('/sales/shipments/list');
             setShipments(res.data);
         } catch (err) {
             console.error(err);
@@ -37,6 +36,14 @@ const Shipments: React.FC = () => {
             setLoading(false);
         }
     };
+
+    const pendingShipments = shipments
+        .filter(s => s.fulfillmentStatus === 'VENDIDO')
+        .sort((a, b) => new Date(a.shippingDate || a.createdAt).getTime() - new Date(b.shippingDate || b.createdAt).getTime());
+
+    const doneShipments = shipments
+        .filter(s => s.fulfillmentStatus === 'DESPACHADO' || s.fulfillmentStatus === 'ENTREGADO')
+        .sort((a, b) => new Date(b.shippingDate || b.createdAt).getTime() - new Date(a.shippingDate || a.createdAt).getTime());
 
     const handleDeliveryDateChange = async (id: number) => {
         if (!deliveryDateInput) return;
@@ -51,7 +58,7 @@ const Shipments: React.FC = () => {
     useEffect(() => {
         fetchShipments();
         api.get('/config').then(r => setConfig(r.data)).catch(() => {});
-    }, [filter]);
+    }, []);
 
     const handleUpdateStatus = async (id: number, newStatus: string) => {
         try {
@@ -81,27 +88,27 @@ const Shipments: React.FC = () => {
                         <p style={{ color: '#64748b' }}>Gestión de entregas programadas</p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {['', 'VENDIDO', 'DESPACHADO', 'ENTREGADO'].map(s => (
-                            <button key={s || 'all'} onClick={() => setFilter(s)} style={{
-                                padding: '0.5rem 1rem', borderRadius: '10px', border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer',
-                                background: filter === s ? '#3b82f6' : '#1e293b', color: filter === s ? 'white' : '#64748b'
-                            }}>
-                                {s ? STATUS_CONFIG[s]?.label : 'Todos'}
-                            </button>
-                        ))}
+                        <button onClick={() => setTab('pending')} style={{
+                            padding: '0.5rem 1.25rem', borderRadius: '10px', border: 'none', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+                            background: tab === 'pending' ? '#3b82f6' : '#1e293b', color: tab === 'pending' ? 'white' : '#64748b'
+                        }}>Pendientes ({pendingShipments.length})</button>
+                        <button onClick={() => setTab('done')} style={{
+                            padding: '0.5rem 1.25rem', borderRadius: '10px', border: 'none', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer',
+                            background: tab === 'done' ? '#10b981' : '#1e293b', color: tab === 'done' ? 'white' : '#64748b'
+                        }}>Despachados ({doneShipments.length})</button>
                     </div>
                 </header>
 
                 {loading ? (
                     <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>Cargando envíos...</div>
-                ) : shipments.length === 0 ? (
-                    <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
-                        <Package size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
-                        <p>No hay envíos registrados</p>
-                    </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {shipments.map(s => {
+                        {(tab === 'pending' ? pendingShipments : doneShipments).length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '4rem', color: '#64748b' }}>
+                                <Package size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                                <p>{tab === 'pending' ? 'No hay envíos pendientes' : 'No hay envíos despachados'}</p>
+                            </div>
+                        ) : (tab === 'pending' ? pendingShipments : doneShipments).map(s => {
                             const cfg = STATUS_CONFIG[s.fulfillmentStatus] || STATUS_CONFIG.VENDIDO;
                             const StatusIcon = cfg.icon;
                             const next = nextStatus(s.fulfillmentStatus);

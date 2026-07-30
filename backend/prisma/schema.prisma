@@ -72,6 +72,7 @@ model User {
   reversedSales  SaleH[]      @relation("ReversedSales")
   cashOpenings   CashOpening[] @relation("CashOpeningUser")
   cashClosings   CashOpening[] @relation("CashClosingUser")
+  createdClients Client[]     @relation(fields: [createdById], references: [id])
   transfers      Transfer[]
   purchases      PurchaseH[]
   branch         Branch?         @relation(fields: [branchId], references: [id])
@@ -218,7 +219,9 @@ model Client {
   address        String?
   isActive       Boolean         @default(true)
   deliveryId     Int?
+  createdById    Int?
   createdAt      DateTime        @default(now())
+  createdBy      User?           @relation(fields: [createdById], references: [id])
   clientPayments ClientPayment[]
   sales          SaleH[]
   delivery       Delivery?       @relation(fields: [deliveryId], references: [id])
