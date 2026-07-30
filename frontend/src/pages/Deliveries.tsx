@@ -33,7 +33,7 @@ const Deliveries: React.FC = () => {
                         <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Deliverys</h1>
                         <p style={{ color: '#94a3b8' }}>Repartidores registrados</p>
                     </div>
-                    <button className="btn-add" onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={20} /> Nuevo</button>
+                    <button style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.6rem 1rem', borderRadius: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }} onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
                 </header>
                 <div className="products-table-wrapper">
                     <table className="products-table">
@@ -68,15 +68,15 @@ const Deliveries: React.FC = () => {
                             <h2 style={{ color: 'white', fontWeight: 800 }}>{editing ? 'Editar Delivery' : 'Nuevo Delivery'}</h2>
                             <button className="btn-close" onClick={() => setShowModal(false)}><X size={24} /></button>
                         </header>
-                        <div className="modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div className="field"><label>Nombre</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nombre del repartidor" /></div>
                             <div className="field"><label>Teléfono</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="7000-0000" /></div>
-                            <footer className="modal-footer" style={{ padding: '0.75rem 0 0', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-                                <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '0.55rem 1.25rem', borderRadius: '10px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Cancelar</button>
-                                <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.55rem 1.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 10px -3px rgba(59, 130, 246, 0.3)' }}>
-                                    <CheckCircle size={18} /> {editing ? 'Actualizar' : 'Guardar'}
+                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', borderTop: '1px solid #334155', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                                <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '0.5rem 1.25rem', borderRadius: '10px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Cancelar</button>
+                                <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <CheckCircle size={16} /> {editing ? 'Actualizar' : 'Guardar'}
                                 </button>
-                            </footer>
+                            </div>
                         </div>
                     </div>
                 </div>
