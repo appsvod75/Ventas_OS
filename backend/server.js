@@ -54,7 +54,7 @@ app.use('/api/projections', require('./routes/projection.routes.js'));
 app.get('/api/manifest', async (req, res) => {
     try {
         const config = await prisma.masterConfig.findFirst();
-        const name = config?.businessName || 'LuckyPOS';
+        const name = config?.businessName || 'Mi Negocio';
         const logo = config?.logoUrl || '';
         res.json({
             name,
@@ -69,7 +69,7 @@ app.get('/api/manifest', async (req, res) => {
                 { src: logo || '/pwa-512x512.png', sizes: '512x512', type: 'image/png' }
             ]
         });
-    } catch { res.json({ name: 'LuckyPOS', short_name: 'LuckyPOS' }); }
+    } catch { res.json({ name: 'Mi Negocio', short_name: 'Mi Negocio' }); }
 });
 
 // Health check
