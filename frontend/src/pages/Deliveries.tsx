@@ -34,7 +34,7 @@ const Deliveries: React.FC = () => {
                         <p style={{ color: '#94a3b8', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>Repartidores registrados</p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <button className="btn-erp" onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
+                        <button onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.7rem 1.4rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}><Plus size={18} /> Nuevo</button>
                     </div>
                 </header>
                 <div className="products-table-wrapper">
