@@ -102,8 +102,7 @@ const getTodaySummary = async (req, res) => {
             createdAt: {
                 gte: start,
                 lte: end
-            },
-            reversedAt: null
+            }
         };
 
         if (user_role !== 'Super Admin' && user_role !== 'Admin') {
@@ -112,7 +111,7 @@ const getTodaySummary = async (req, res) => {
 
         const sales = await prisma.saleH.aggregate({
             _sum: { total: true, discount: true, shipping: true },
-            where: whereClause
+            where: { ...whereClause, reversedAt: null }
         });
 
         const expenses = await prisma.expense.aggregate({
