@@ -135,17 +135,17 @@ const backupDatabase = async (req, res) => {
         const files = [dbPath, path.join(dbDir, dbBase + '.db-wal'), path.join(dbDir, dbBase + '.db-shm')]
             .filter(f => fs.existsSync(f));
 
-        const { TarArchive } = require('archiver');
-        const tar = new TarArchive({ gzip: true });
+        const { ZipArchive } = require('archiver');
+        const zip = new ZipArchive();
         for (const f of files) {
-            tar.file(f, { name: path.basename(f) });
+            zip.file(f, { name: path.basename(f) });
         }
-        tar.finalize();
+        zip.finalize();
 
         const date = new Date().toISOString().slice(0, 10);
-        res.setHeader('Content-Type', 'application/gzip');
-        res.setHeader('Content-Disposition', `attachment; filename="backup-ventasee-${date}.tar.gz"`);
-        tar.pipe(res);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="backup-ventasee-${date}.zip"`);
+        zip.pipe(res);
     } catch (error) {
         console.error('Backup error:', error);
         res.status(500).json({ message: 'Error al generar backup' });

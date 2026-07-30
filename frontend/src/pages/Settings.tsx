@@ -1141,7 +1141,7 @@ const Settings: React.FC = () => {
                                             if (!res.ok) return toast.error('Error al descargar backup');
                                             const blob = await res.blob();
                                             const url = URL.createObjectURL(blob);
-                                            const a = document.createElement('a'); a.href = url; a.download = 'backup-ventasee-' + new Date().toISOString().slice(0,10) + '.tar.gz';
+                                            const a = document.createElement('a'); a.href = url; a.download = 'backup-ventasee-' + new Date().toISOString().slice(0,10) + '.zip';
                                             document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
                                             toast.success('Backup descargado');
                                         } catch { toast.error('Error al descargar backup'); }
