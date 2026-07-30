@@ -1135,12 +1135,12 @@ const Settings: React.FC = () => {
                                     <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>
                                         Descarga un archivo comprimido (.tar.gz) con la base de datos completa. Úsalo como respaldo antes de hacer cambios críticos.
                                     </p>
-                                    <a href="/api/config/danger/backup" target="_blank"
-                                        style={{ width: '100%', padding: '0.8rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}
+                                    <button onClick={() => window.open('/api/config/danger/backup', '_blank')}
+                                        style={{ width: '100%', padding: '0.8rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         onMouseOver={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)')}
                                         onMouseOut={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)')}>
                                         <Download size={18} style={{ marginRight: '8px' }} /> Descargar Backup
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </div>
