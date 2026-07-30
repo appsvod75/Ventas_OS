@@ -15,7 +15,8 @@ const getDashboardStats = async (req, res) => {
             createdAt: {
                 gte: start,
                 lte: end
-            }
+            },
+            reversedAt: null
         };
 
         if (branchId) {
