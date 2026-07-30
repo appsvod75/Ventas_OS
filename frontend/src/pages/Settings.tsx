@@ -1135,7 +1135,17 @@ const Settings: React.FC = () => {
                                     <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>
                                         Descarga un archivo comprimido (.tar.gz) con la base de datos completa. Úsalo como respaldo antes de hacer cambios críticos.
                                     </p>
-                                    <button onClick={() => window.open('/api/config/danger/backup', '_blank')}
+                                    <button onClick={async () => {
+                                        try {
+                                            const res = await fetch('/api/config/danger/backup', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } });
+                                            if (!res.ok) return toast.error('Error al descargar backup');
+                                            const blob = await res.blob();
+                                            const url = URL.createObjectURL(blob);
+                                            const a = document.createElement('a'); a.href = url; a.download = 'backup-ventasee-' + new Date().toISOString().slice(0,10) + '.tar.gz';
+                                            document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                                            toast.success('Backup descargado');
+                                        } catch { toast.error('Error al descargar backup'); }
+                                    }}
                                         style={{ width: '100%', padding: '0.8rem', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                         onMouseOver={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)')}
                                         onMouseOut={e => (e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)')}>
