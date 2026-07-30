@@ -34,7 +34,7 @@ const Deliveries: React.FC = () => {
                         <p style={{ color: '#94a3b8', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>Repartidores registrados</p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <button onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.7rem 1.4rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }}><Plus size={18} /> Nuevo</button>
+                        <button className="btn-add" onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
                     </div>
                 </header>
                 <div className="products-table-wrapper">
@@ -73,16 +73,19 @@ const Deliveries: React.FC = () => {
                         <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div className="field"><label>Nombre</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nombre del repartidor" /></div>
                             <div className="field"><label>Teléfono</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="7000-0000" /></div>
-                            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', borderTop: '1px solid #334155', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                                <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '0.5rem 1.25rem', borderRadius: '10px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Cancelar</button>
-                                <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem 1.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <CheckCircle size={16} /> {editing ? 'Actualizar' : 'Guardar'}
-                                </button>
+                             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', borderTop: '1px solid #334155', paddingTop: '1rem', marginTop: '0.5rem' }}>
+                                <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
+                                <button className="btn-save" onClick={handleSave}><CheckCircle size={16} /> {editing ? 'Actualizar' : 'Guardar'}</button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
+            <style>{`
+.btn-add { background: #3b82f6; color: white; border: none; padding: 0.7rem 1.2rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
+.btn-cancel { background: transparent; border: 1px solid #334155; color: #94a3b8; padding: 0.5rem 1.25rem; border-radius: 10px; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+.btn-save { background: #3b82f6; color: white; border: none; padding: 0.5rem 1.5rem; border-radius: 10px; font-weight: 800; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+`}</style>
         </div>
     );
 };
