@@ -37,13 +37,12 @@ const Deliveries: React.FC = () => {
                 </header>
                 <div className="products-table-wrapper">
                     <table className="products-table">
-                        <thead><tr><th>NOMBRE</th><th>TELÉFONO</th><th>ESTADO</th><th style={{ textAlign: 'right' }}>ACCIONES</th></tr></thead>
+                        <thead><tr><th>NOMBRE</th><th>TELÉFONO</th><th style={{ textAlign: 'right' }}>ACCIONES</th></tr></thead>
                         <tbody>
                             {items.map(d => (
                                 <tr key={d.id}>
                                     <td><span style={{ fontWeight: 700, color: '#e2e8f0' }}>{d.name}</span></td>
                                     <td style={{ color: '#94a3b8' }}>{d.phone || '---'}</td>
-                                    <td><span className={`badge ${d.isActive ? 'badge-success' : 'badge-warning'}`}>{d.isActive ? 'ACTIVO' : 'INACTIVO'}</span></td>
                                     <td style={{ textAlign: 'right' }}>
                                         <button className="btn-icon-table edit" onClick={() => { setEditing(d); setForm({ name: d.name, phone: d.phone || '' }); setShowModal(true); }}><Edit3 size={16} /></button>
                                     </td>
@@ -63,9 +62,11 @@ const Deliveries: React.FC = () => {
                         <div className="modal-body" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             <div className="field"><label>Nombre</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Nombre del repartidor" /></div>
                             <div className="field"><label>Teléfono</label><input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="7000-0000" /></div>
-                            <footer className="modal-footer" style={{ padding: '0.75rem 0 0' }}>
-                                <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
-                                <button className="btn-main" onClick={handleSave}><CheckCircle size={18} /> {editing ? 'Actualizar' : 'Guardar'}</button>
+                            <footer className="modal-footer" style={{ padding: '0.75rem 0 0', display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                                <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '0.55rem 1.25rem', borderRadius: '10px', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Cancelar</button>
+                                <button onClick={handleSave} style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.55rem 1.5rem', borderRadius: '10px', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 10px -3px rgba(59, 130, 246, 0.3)' }}>
+                                    <CheckCircle size={18} /> {editing ? 'Actualizar' : 'Guardar'}
+                                </button>
                             </footer>
                         </div>
                     </div>
