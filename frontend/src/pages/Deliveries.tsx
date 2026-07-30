@@ -33,7 +33,7 @@ const Deliveries: React.FC = () => {
                         <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Deliverys</h1>
                         <p style={{ color: '#94a3b8' }}>Repartidores registrados</p>
                     </div>
-                    <button style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.45rem 0.9rem', borderRadius: '10px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.78rem', alignSelf: 'center' }} onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={16} /> Nuevo</button>
+                    <button style={{ background: '#3b82f6', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(59,130,246,0.3)' }} onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
                 </header>
                 <div className="products-table-wrapper">
                     <table className="products-table">
