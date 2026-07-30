@@ -116,7 +116,7 @@ const Sidebar: React.FC = () => {
   return (
     <nav className="sidebar" style={{ borderRight: `4px solid ${branchColor}` }}>
       <div className="sidebar-logo">
-        <Link to="/admin" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+        <Link to={isAdmin ? '/admin' : '/pos'} style={{ textDecoration: 'none', color: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
           <div className="logo-container premium-logo">
             {!isLoading && (
               logoUrl ? (
