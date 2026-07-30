@@ -28,12 +28,12 @@ const Deliveries: React.FC = () => {
         <div className="products-page">
             <Sidebar />
             <main className="products-main" style={{ padding: '2rem 4rem', overflow: 'auto' }}>
-                <header className="page-header" style={{ marginBottom: '2rem' }}>
-                    <div className="header-text">
+                <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                    <div>
                         <h1 style={{ fontSize: '2rem', fontWeight: 800, margin: 0 }}>Deliverys</h1>
-                        <p style={{ color: '#94a3b8', margin: '0.25rem 0 0' }}>Repartidores registrados</p>
+                        <p style={{ color: '#94a3b8', margin: '0.25rem 0 0', fontSize: '0.9rem' }}>Repartidores registrados</p>
                     </div>
-                    <div className="header-tools">
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                         <button className="btn-erp" onClick={() => { setEditing(null); setForm({ name: '', phone: '' }); setShowModal(true); }}><Plus size={18} /> Nuevo</button>
                     </div>
                 </header>
