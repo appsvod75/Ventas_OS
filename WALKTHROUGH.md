@@ -290,3 +290,4 @@ Crea: 38 permisos, 3 roles, superadmin (PIN: `020518`), sucursal por defecto, cl
 5. **Carrito POS** - Cada tap crea línea nueva (no incrementa existente)
 6. **Gastos CRUD** - Editar y eliminar requiere PIN de admin
 7. **Cliente obligatorio** - En checkout, el cliente es requerido (nombre y teléfono)
+8. **Doble fetch en listados** - Evitar dos `useEffect` que llamen al mismo fetch al montar (debounce + inmediato). Causa parpadeo tipo reload. Usar ref para que el debounce solo corra ante cambios reales (ver fix Historial, `SalesHistory.tsx`)

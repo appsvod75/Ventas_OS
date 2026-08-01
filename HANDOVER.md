@@ -137,6 +137,13 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 - Revisar reversión: gasto creado incluye envío, debería ser solo productos (el envío va aparte)
 - Refinar lógica de reembolso en anulación
 
+## Última sesión (01 Ago 2026) — Resumen de cambios
+
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Fix parpadeo Historial** | Al navegar al Historial de Ventas había un parpadeo tipo reload. Causa: doble fetch al montar (efecto con debounce en `searchTerm` + efecto inmediato en `[page, startDate, endDate]`). El fetch diferido ~500ms volvía a poner `isLoading=true`. Fix: el efecto de búsqueda solo dispara cuando `searchTerm` cambia de verdad (ref `lastSearchRef`), no en el primer render |
+
 ### 📦 Archivos nuevos en esta sesión
 - `frontend/src/pages/ProductLookupPage.tsx`
 - `frontend/src/pages/SellerReport.tsx`

@@ -60,6 +60,7 @@ const SalesHistory: React.FC = () => {
     const [foundProducts, setFoundProducts] = useState<any[]>([]);
     const [isSearchingProducts, setIsSearchingProducts] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
+    const lastSearchRef = useRef(searchTerm);
 
     // Pagination attributes
     const [page, setPage] = useState(1);
@@ -67,6 +68,9 @@ const SalesHistory: React.FC = () => {
     const limit = 20;
 
     useEffect(() => {
+        if (lastSearchRef.current === searchTerm) return;
+        lastSearchRef.current = searchTerm;
+
         const delayDebounceFn = setTimeout(() => {
             if (page === 1) fetchHistory();
             else setPage(1);
