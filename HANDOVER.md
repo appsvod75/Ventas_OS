@@ -134,8 +134,8 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 | **Animación cascada** | Módulos del dashboard aparecen uno tras otro con glow azul |
 
 ### ⏳ Pendiente
-- Revisar reversión: gasto creado incluye envío, debería ser solo productos (el envío va aparte)
-- Refinar lógica de reembolso en anulación
+- ✅ ~~Revisar reversión: gasto creado incluye envío~~ → **Resuelto 01 Ago**: el reembolso ahora es solo productos, el envío va aparte solo si ya se incurrió
+- Refinar lógica de reembolso en anulación (casos restantes: pago parcial con envío, tarjeta)
 
 ## Última sesión (01 Ago 2026) — Resumen de cambios
 
@@ -144,15 +144,29 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 |---------|-------------|
 | **Fix parpadeo Historial** | Al navegar al Historial de Ventas había un parpadeo tipo reload. Causa: doble fetch al montar (efecto con debounce en `searchTerm` + efecto inmediato en `[page, startDate, endDate]`). El fetch diferido ~500ms volvía a poner `isLoading=true`. Fix: el efecto de búsqueda solo dispara cuando `searchTerm` cambia de verdad (ref `lastSearchRef`), no en el primer render |
 
+## Última sesión (02 Ago 2026) — Resumen de cambios
+
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Fix reembolso en anulación** | El gasto de reembolso excluía el envío (`productRefund = cashPaid - shipping`), solo productos. El envío se registra como gasto aparte SOLO si `includeShipping` (ya incurrido: DESPACHADO/ENTREGADO). Antes doble contaba (reembolso con envío + gasto envío aparte). Probado: venta $55+$5 → con envío incurrido $55+$5, sin incurrir solo $55 |
+| **Delivery + Vendedor en Label de Envío** | Nuevos campos configurables en Settings → Label de Envío. La data del delivery ya venía en el endpoint (`sale.controller.js` incluye `delivery: { name, phone }`). El vendedor usa `user.name` (ya estaba). Requiere activar los toggles |
+| **Día en fecha del Label** | La fecha de envío ahora imprime con día: `Sábado 01/08/2026` (capitalizado, locale `es`) |
+| **Fix colores botones de pago** | Faltaban estilos `.active.transfer` (morado) y `.active.credit` (ámbar) en CheckoutModal — TRANSFERENCIA y CREDITO no se resaltaban al seleccionar |
+| **Auto-update reactivado** | `initAppVersionSync` estaba definido pero desconectado. Se conectó en `App.tsx` con `enabled: () => !!localStorage.getItem('token')` (solo con sesión activa, evita recargas en logout). Verifica `version.json` en focus/visibility (min 30s entre checks). Se eliminó el toast manual duplicado |
+| **Orden pendientes en Envíos** | Pendientes: atrasados al tope, luego por fecha ascendente (FIFO). Despachados: más recientes primero (LIFO) |
+| **sqlite3 en VPS** | Herramienta de consulta instalada (`apt install sqlite3`) para verificar columnas/consultas de solo lectura. Nunca UPDATE/DELETE a mano |
+
+### ⏳ Pendiente
+- Refinar lógica de reembolso (casos: pago parcial con envío, tarjeta) — reembolso productos ya resuelto
+- Diseños/Stamping: `customData` en SaleD, modal personalización (esperando formato admin), modal solo lectura con imagen
+- Confirmar si los deliverys van en checkout o solo en modal de cliente
+- Labels: altura fija según el tamaño que compren los clientes (70×50mm recomendado) — ajustar campos si no cabe
+
 ### 📦 Archivos nuevos en esta sesión
-- `frontend/src/pages/ProductLookupPage.tsx`
-- `frontend/src/pages/SellerReport.tsx`
-- `frontend/src/pages/Deliveries.tsx`
-- `backend/controllers/opening.controller.js`
-- `backend/controllers/delivery.controller.js`
-- `backend/routes/opening.routes.js`
-- `backend/routes/delivery.routes.js`
-- `frontend/src/components/ProductLookupModal.tsx`
+- No hay archivos nuevos (solo modificaciones)
+
+### Archivos nuevos (sesión 29 Jul)
 
 ### 🧠 Lecciones aprendidas (deploy)
 1. **NUNCA** subir `misventas.db` al VPS

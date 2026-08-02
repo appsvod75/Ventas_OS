@@ -201,8 +201,8 @@ En el modal de cobro, seleccionar **PAGO PARCIAL**:
 - Ordenado por fecha de despacho ascendente (más antiguos primero)
 
 ### Auto-Update
-- Cada `npm run build` genera versión única (timestamp)
-- Al subir `dist/`, los usuarios detectan la nueva versión al recuperar foco
+- Cada `npm run build` genera versión única (timestamp) en `public/version.json`
+- `initAppVersionSync` (conectado en `App.tsx`) verifica `version.json` al recuperar foco/visibility, **solo con sesión activa** (`enabled: token`) para no romper logout
 - Precarga assets antes de recargar (sin pantalla blanca)
 - Anti-flood 30s entre comprobaciones
 

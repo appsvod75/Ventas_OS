@@ -722,8 +722,8 @@ const SalesHistory: React.FC = () => {
                                     )}
                                     {selectedSale.paymentMethod.includes('EFECTIVO') && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#ef4444' }}>
-                                            <span>— Reembolso efectivo:</span>
-                                            <span style={{ fontWeight: 700 }}>${Number((selectedSale.amountTendered || 0) - (selectedSale.change || 0)).toFixed(2)}</span>
+                                            <span>— Reembolso productos:</span>
+                                            <span style={{ fontWeight: 700 }}>${Number(Math.max(0, (selectedSale.amountTendered || 0) - (selectedSale.change || 0) - (selectedSale.shipping || 0))).toFixed(2)}</span>
                                         </div>
                                     )}
                                 </div>

@@ -39,7 +39,15 @@ const Shipments: React.FC = () => {
 
     const pendingShipments = shipments
         .filter(s => s.fulfillmentStatus === 'VENDIDO')
-        .sort((a, b) => new Date(a.shippingDate || a.createdAt).getTime() - new Date(b.shippingDate || b.createdAt).getTime());
+        .sort((a, b) => {
+            const aDate = new Date(a.shippingDate || a.createdAt).getTime();
+            const bDate = new Date(b.shippingDate || b.createdAt).getTime();
+            const aOverdue = a.shippingDate && new Date(a.shippingDate) < new Date();
+            const bOverdue = b.shippingDate && new Date(b.shippingDate) < new Date();
+            if (aOverdue && !bOverdue) return -1;
+            if (!aOverdue && bOverdue) return 1;
+            return aDate - bDate;
+        });
 
     const doneShipments = shipments
         .filter(s => s.fulfillmentStatus === 'DESPACHADO' || s.fulfillmentStatus === 'ENTREGADO')

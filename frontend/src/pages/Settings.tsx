@@ -641,6 +641,8 @@ const Settings: React.FC = () => {
                                         { key: 'phone', label: 'Teléfono' },
                                         { key: 'address', label: 'Dirección' },
                                         { key: 'products', label: 'Productos' },
+                                        { key: 'delivery', label: 'Delivery' },
+                                        { key: 'seller', label: 'Vendedor' },
                                         { key: 'total', label: 'Total' },
                                         { key: 'shippingDate', label: 'Fecha de envío' },
                                         { key: 'status', label: 'Estado' },

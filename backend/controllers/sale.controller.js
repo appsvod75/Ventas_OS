@@ -578,6 +578,7 @@ const getShipments = async (req, res) => {
                 client: { select: { name: true, phone: true, address: true, email: true } },
                 user: { select: { name: true } },
                 branch: { select: { name: true } },
+                delivery: { select: { name: true, phone: true } },
                 details: {
                     include: { product: { select: { name: true, imageUrl: true } } }
                 }
@@ -665,24 +666,25 @@ const reverseSale = async (req, res) => {
                 }
             }
 
-            // 2. Crear gasto por reembolso si pagó en efectivo
+            // 2. Crear gasto por reembolso si pagó en efectivo (SOLO productos, sin envío)
             const paidInCash = sale.paymentMethod === 'CASH' || sale.paymentMethod?.includes('EFECTIVO');
             if (paidInCash) {
                 const cashPaid = (sale.amountTendered || 0) - (sale.change || 0);
-                if (cashPaid > 0) {
+                const productRefund = Math.max(0, cashPaid - (sale.shipping || 0));
+                if (productRefund > 0) {
                     await tx.expense.create({
                         data: {
                             branchId: sale.branchId,
                             userId,
-                            description: `REVERSIÓN Venta #${sale.id} - Reembolso efectivo: ${reason}`,
-                            amount: cashPaid,
+                            description: `REVERSIÓN Venta #${sale.id} - Reembolso productos: ${reason}`,
+                            amount: productRefund,
                             createdAt: new Date()
                         }
                     });
                 }
             }
 
-            // 3. Crear gasto por envío si aplica
+            // 3. Crear gasto por envío aparte, SOLO si el usuario confirmó que ya se incurrió
             if (includeShipping && sale.shipping > 0) {
                 await tx.expense.create({
                     data: {

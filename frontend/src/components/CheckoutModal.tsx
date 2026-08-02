@@ -609,6 +609,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                 .pay-method-btn svg { width: 14px; height: 14px; }
                 .pay-method-btn.active.cash { background: rgba(16,185,129,0.15); border-color: #10b981; color: #10b981; box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
                 .pay-method-btn.active.card { background: rgba(59,130,246,0.15); border-color: #3b82f6; color: #3b82f6; box-shadow: 0 4px 12px rgba(59,130,246,0.2); }
+                .pay-method-btn.active.transfer { background: rgba(139,92,246,0.15); border-color: #8b5cf6; color: #a78bfa; box-shadow: 0 4px 12px rgba(139,92,246,0.2); }
+                .pay-method-btn.active.credit { background: rgba(245,158,11,0.15); border-color: #f59e0b; color: #fbbf24; box-shadow: 0 4px 12px rgba(245,158,11,0.2); }
                 .pay-method-btn.disabled { opacity: 0.3; pointer-events: none; }
 
                 .amount-input-wrapper { display: flex; align-items: center; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; height: 44px; padding: 0 12px; gap: 8px; }

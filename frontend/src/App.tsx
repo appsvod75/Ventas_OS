@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { socket, socketEvents } from './services/socket';
 import { Toaster } from 'react-hot-toast';
 import { configApi } from './services/api';
+import { initAppVersionSync } from './lib/appUpdate';
 import './styles/dashboard-routes.css';
 import Login from './pages/Login';
 import POS from './pages/POS';
@@ -90,18 +91,18 @@ const App: React.FC = () => {
         window.addEventListener('config-updated', handleConfigUpdate);
 
         const currentVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '';
-        const lastVersion = localStorage.getItem('lucky_app_version');
-        if (currentVersion && lastVersion && lastVersion !== currentVersion) {
-            const name = document.title || 'Mi Negocio';
-            import('react-hot-toast').then(({ toast }) => {
-                toast.success(`${name} se ha actualizado a la última versión automáticamente`, { duration: 3000 });
-            });
-        }
         if (currentVersion) localStorage.setItem('lucky_app_version', currentVersion);
+
+        // --- AUTO-UPDATE ACTIVO: verifica version.json en focus/visibility ---
+        // Solo corre con sesión activa (token presente) para no disparar recargas en logout.
+        const stopVersionSync = initAppVersionSync({
+            enabled: () => !!localStorage.getItem('token'),
+        });
 
         return () => {
             window.removeEventListener('error', handleAssetError, true);
             window.removeEventListener('config-updated', handleConfigUpdate);
+            stopVersionSync();
         };
     }, []);
 

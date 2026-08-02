@@ -38,7 +38,10 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
                 {fields.includes('shippingDate') && shipment.shippingDate && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
                         <span>Envío:</span>
-                        <span style={{ fontWeight: 'bold' }}>{format(new Date(shipment.shippingDate), 'dd/MM/yy', { locale: es })}</span>
+                        <span style={{ fontWeight: 'bold' }}>{(() => {
+                            const d = format(new Date(shipment.shippingDate), 'EEEE dd/MM/yyyy', { locale: es });
+                            return d.charAt(0).toUpperCase() + d.slice(1);
+                        })()}</span>
                     </div>
                 )}
 
@@ -72,6 +75,18 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
                 {fields.includes('address') && shipment.client?.address && (
                     <div style={{ fontSize: '8pt', marginBottom: '1mm' }}>
                         <span>{shipment.client.address}</span>
+                    </div>
+                )}
+
+                {fields.includes('delivery') && shipment.delivery?.name && (
+                    <div style={{ fontSize: '8pt', marginBottom: '1mm' }}>
+                        <span>Delivery: <span style={{ fontWeight: 'bold' }}>{shipment.delivery.name}</span>{shipment.delivery.phone ? ` · ${shipment.delivery.phone}` : ''}</span>
+                    </div>
+                )}
+
+                {fields.includes('seller') && shipment.user?.name && (
+                    <div style={{ fontSize: '8pt', marginBottom: '1mm' }}>
+                        <span>Vendedor: <span style={{ fontWeight: 'bold' }}>{shipment.user.name}</span></span>
                     </div>
                 )}
 
