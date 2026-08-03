@@ -246,6 +246,7 @@ const Settings: React.FC = () => {
                             { key: 'lookup', label: 'Consultar', enabled: true },
                             { key: 'sellerReport', label: 'Comisiones', enabled: true },
                             { key: 'deliveries', label: 'Deliverys', enabled: true },
+                            { key: 'shipments', label: 'Envíos', enabled: true },
                         ];
                         const savedKeys = new Set(saved.map((i: any) => i.key));
                         const newItems = allSidebarItems.filter(i => !savedKeys.has(i.key));
@@ -632,9 +633,43 @@ const Settings: React.FC = () => {
                                 <h4 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', color: '#818cf8', fontSize: '1rem' }}>
                                     <Printer size={20} /> Label de Envío
                                 </h4>
-                                <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>Selecciona los campos que aparecerán en la etiqueta de envío al imprimir.</p>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                                    {[
+                                <p style={{ fontSize: '0.8rem', color: '#64748b', marginBottom: '1rem' }}>Organiza los campos en 3 secciones. Cada línea punteada del label separa una sección. Usa las flechas para cambiar de sección y ordenar.</p>
+                                {(() => {
+                                    const sectionDefs = [
+                                        { key: 'section1', label: '1. Cabecera', color: '#818cf8' },
+                                        { key: 'section2', label: '2. Cliente', color: '#10b981' },
+                                        { key: 'section3', label: '3. Detalle', color: '#f59e0b' }
+                                    ];
+                                    const fields = config.labelFields && config.labelFields.length > 0
+                                        ? config.labelFields
+                                        : ['businessName', 'clientName', 'phone', 'address', 'products', 'shippingDate', 'saleId', 'total'];
+                                    const sections = config.labelSections && typeof config.labelSections === 'object'
+                                        ? config.labelSections
+                                        : { section1: ['businessName', 'saleId', 'seller', 'shippingDate', 'status'], section2: ['clientName', 'phone', 'address', 'delivery'], section3: ['products', 'total'] };
+
+                                    const moveField = (fieldKey: string, fromSection: string, toSection: string) => {
+                                        if (fromSection === toSection) return;
+                                        const newSections = { ...sections };
+                                        newSections[fromSection] = (newSections[fromSection] || []).filter((k: string) => k !== fieldKey);
+                                        if (!newSections[toSection]) newSections[toSection] = [];
+                                        newSections[toSection] = [...newSections[toSection], fieldKey];
+                                        setConfig({ ...config, labelSections: newSections });
+                                    };
+
+                                    const shiftField = (sectionKey: string, index: number, delta: number) => {
+                                        const list = [...(sections[sectionKey] || [])];
+                                        const target = index + delta;
+                                        if (target < 0 || target >= list.length) return;
+                                        [list[index], list[target]] = [list[target], list[index]];
+                                        setConfig({ ...config, labelSections: { ...sections, [sectionKey]: list } });
+                                    };
+
+                                    const toggleField = (fieldKey: string) => {
+                                        const newFields = fields.includes(fieldKey) ? fields.filter((f: string) => f !== fieldKey) : [...fields, fieldKey];
+                                        setConfig({ ...config, labelFields: newFields });
+                                    };
+
+                                    const allFieldDefs = [
                                         { key: 'businessName', label: 'Nombre del negocio' },
                                         { key: 'saleId', label: '# de Venta' },
                                         { key: 'clientName', label: 'Nombre del cliente' },
@@ -645,21 +680,55 @@ const Settings: React.FC = () => {
                                         { key: 'seller', label: 'Vendedor' },
                                         { key: 'total', label: 'Total' },
                                         { key: 'shippingDate', label: 'Fecha de envío' },
-                                        { key: 'status', label: 'Estado' },
-                                    ].map(field => {
-                                        const fields: string[] = config.labelFields || ['businessName', 'clientName', 'phone', 'address', 'products', 'shippingDate', 'saleId', 'total'];
-                                        const isSelected = fields.includes(field.key);
-                                        return (
-                                            <label key={field.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', padding: '0.4rem 0.75rem', borderRadius: '8px', background: isSelected ? 'rgba(99,102,241,0.15)' : '#0f172a', border: `1px solid ${isSelected ? 'rgba(99,102,241,0.3)' : '#334155'}`, color: isSelected ? '#818cf8' : '#94a3b8', fontWeight: 700, fontSize: '0.75rem' }}>
-                                                <input type="checkbox" checked={isSelected} onChange={e => {
-                                                    const newFields = e.target.checked ? [...fields, field.key] : fields.filter((f: string) => f !== field.key);
-                                                    setConfig({ ...config, labelFields: newFields });
-                                                }} style={{ accentColor: '#818cf8' }} />
-                                                {field.label}
-                                            </label>
-                                        );
-                                    })}
-                                </div>
+                                        { key: 'status', label: 'Estado' }
+                                    ];
+                                    const labelOf = (key: string) => allFieldDefs.find(f => f.key === key)?.label || key;
+
+                                    return (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            <div>
+                                                <p style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 800, marginBottom: '0.5rem' }}>CAMPO ACTIVO (toggle)</p>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                    {allFieldDefs.map(f => {
+                                                        const isOn = fields.includes(f.key);
+                                                        return (
+                                                            <button key={f.key} onClick={() => toggleField(f.key)} style={{
+                                                                padding: '0.4rem 0.75rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
+                                                                background: isOn ? 'rgba(99,102,241,0.15)' : '#0f172a',
+                                                                border: `1px solid ${isOn ? 'rgba(99,102,241,0.3)' : '#334155'}`,
+                                                                color: isOn ? '#818cf8' : '#64748b'
+                                                            }}>
+                                                                {isOn ? '✓ ' : '○ '}{f.label}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' }}>
+                                                {sectionDefs.map(section => (
+                                                    <div key={section.key} style={{ background: '#0f172a', borderRadius: '12px', border: `1px solid ${section.color}33`, padding: '0.75rem' }}>
+                                                        <p style={{ fontSize: '0.7rem', fontWeight: 900, color: section.color, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{section.label}</p>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minHeight: '40px' }}>
+                                                            {(sections[section.key] || []).filter((k: string) => fields.includes(k)).map((key: string, idx: number) => (
+                                                                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#1e293b', borderRadius: '8px', padding: '0.35rem 0.5rem' }}>
+                                                                    <span style={{ flex: 1, fontSize: '0.75rem', fontWeight: 700, color: '#e2e8f0' }}>{labelOf(key)}</span>
+                                                                    <button onClick={() => shiftField(section.key, idx, -1)} disabled={idx === 0} style={{ background: 'none', border: 'none', color: '#64748b', cursor: idx === 0 ? 'not-allowed' : 'pointer', opacity: idx === 0 ? 0.3 : 1, padding: '2px' }}>↑</button>
+                                                                    <button onClick={() => shiftField(section.key, idx, 1)} disabled={idx === (sections[section.key] || []).filter((k: string) => fields.includes(k)).length - 1} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px' }}>↓</button>
+                                                                    {section.key !== 'section1' && <button onClick={() => moveField(key, section.key, 'section1')} title="Mover a Cabecera" style={{ background: 'none', border: 'none', color: '#818cf8', cursor: 'pointer', padding: '2px', fontSize: '0.8rem' }}>1</button>}
+                                                                    {section.key !== 'section2' && <button onClick={() => moveField(key, section.key, 'section2')} title="Mover a Cliente" style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: '2px', fontSize: '0.8rem' }}>2</button>}
+                                                                    {section.key !== 'section3' && <button onClick={() => moveField(key, section.key, 'section3')} title="Mover a Detalle" style={{ background: 'none', border: 'none', color: '#f59e0b', cursor: 'pointer', padding: '2px', fontSize: '0.8rem' }}>3</button>}
+                                                                </div>
+                                                            ))}
+                                                            {(sections[section.key] || []).filter((k: string) => fields.includes(k)).length === 0 && (
+                                                                <p style={{ fontSize: '0.65rem', color: '#475569', margin: 0 }}>Vacío</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                         </div>
                     )}

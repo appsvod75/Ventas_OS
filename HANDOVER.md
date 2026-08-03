@@ -144,6 +144,23 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 |---------|-------------|
 | **Fix parpadeo Historial** | Al navegar al Historial de Ventas había un parpadeo tipo reload. Causa: doble fetch al montar (efecto con debounce en `searchTerm` + efecto inmediato en `[page, startDate, endDate]`). El fetch diferido ~500ms volvía a poner `isLoading=true`. Fix: el efecto de búsqueda solo dispara cuando `searchTerm` cambia de verdad (ref `lastSearchRef`), no en el primer render |
 
+## Última sesión (03 Ago 2026) — Resumen de cambios
+
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Label configurable en 3 secciones** | Nuevo `labelSections` (JSON) en MasterConfig. Settings → Label de Envío: toggles de campos + 3 columnas ordenables (↑/↓ ordenar, botones 1/2/3 mover sección). Label renderiza por secciones con separadores punteados. Default: Cabecera (businessName, saleId, seller, shippingDate, status) → Cliente (clientName, phone, address, delivery) → Detalle (products, total). Requiere `prisma db push` en VPS (nueva columna) |
+| **Fix módulo Envíos en sidebar** | `shipments` no estaba en `allPossibleItems` (Sidebar.tsx) ni `allSidebarItems` (Settings) — por eso no era seleccionable en barra lateral aunque sí en menú principal. Agregado en ambos. Módulos nuevos se añaden automáticamente al final de la lista guardada |
+
+### ⏳ Pendiente
+- Refinar lógica de reembolso (casos: pago parcial con envío, tarjeta) — reembolso productos ya resuelto
+- Diseños/Stamping: `customData` en SaleD, modal personalización (esperando formato admin), modal solo lectura con imagen
+- Confirmar si los deliverys van en checkout o solo en modal de cliente
+- Labels: altura fija según el tamaño que compren los clientes (70×50mm recomendado) — ajustar campos si no cabe
+
+### 📦 Archivos nuevos en esta sesión
+- No hay archivos nuevos (solo modificaciones)
+
 ## Última sesión (02 Ago 2026) — Resumen de cambios
 
 ### ✅ Implementado

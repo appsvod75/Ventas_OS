@@ -182,6 +182,7 @@ En el modal de cobro, seleccionar **PAGO PARCIAL**:
 ### Label de Envío
 - Botón 🖨️ en cada envío → modal con previsualización
 - Campos configurables desde Settings → IA e Impresión → Label de Envío
+- **Configurable en 3 secciones** (Cabecera/Cliente/Detalle) con orden arrastrable — `labelSections` JSON en MasterConfig
 - Impresión directa (ventana nueva con formato 70mm)
 
 ### Seguridad con PIN

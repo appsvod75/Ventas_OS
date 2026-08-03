@@ -10,109 +10,136 @@ interface LabelModalProps {
     shipment: any;
     businessConfig: any;
     labelFields: string[];
+    labelSections?: any;
 }
 
-const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig: any; labelFields: string[] }>(
-    ({ shipment, businessConfig, labelFields }, ref) => {
+const DEFAULT_SECTIONS = {
+    section1: ['businessName', 'saleId', 'seller', 'shippingDate', 'status'],
+    section2: ['clientName', 'phone', 'address', 'delivery'],
+    section3: ['products', 'total']
+};
+
+const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig: any; labelFields: string[]; labelSections?: any }>(
+    ({ shipment, businessConfig, labelFields, labelSections }, ref) => {
         const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-        const fields = labelFields.length > 0 ? labelFields : ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'];
+        const flatFields = labelFields.length > 0 ? labelFields : ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'];
+        const sections = labelSections && typeof labelSections === 'object'
+            ? labelSections
+            : DEFAULT_SECTIONS;
 
-        return (
-            <div ref={ref} style={{
-                width: '70mm', padding: '3mm', background: 'white', color: 'black',
-                fontFamily: "'Courier New', Courier, monospace", fontSize: '9pt', lineHeight: '1.3'
-            }}>
-                {fields.includes('businessName') && (
-                    <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11pt', marginBottom: '2mm', textTransform: 'uppercase' }}>
-{businessConfig.businessName || 'Mi Negocio'}
-                    </div>
-                )}
-
-                {fields.includes('saleId') && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
-                        <span>Venta #:</span>
-                        <span style={{ fontWeight: 'bold' }}>{shipment.id}</span>
-                    </div>
-                )}
-
-                {fields.includes('shippingDate') && shipment.shippingDate && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
-                        <span>Envío:</span>
-                        <span style={{ fontWeight: 'bold' }}>{(() => {
-                            const d = format(new Date(shipment.shippingDate), 'EEEE dd/MM/yyyy', { locale: es });
-                            return d.charAt(0).toUpperCase() + d.slice(1);
-                        })()}</span>
-                    </div>
-                )}
-
-                {(!shipment.shippingDate && fields.includes('shippingDate')) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
-                        <span>Entrega:</span>
-                        <span style={{ fontWeight: 'bold', color: '#10b981' }}>INMEDIATA</span>
-                    </div>
-                )}
-
-                {fields.includes('status') && (
-                    <div style={{ textAlign: 'center', fontSize: '8pt', marginBottom: '1mm', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                        [{shipment.fulfillmentStatus === 'ENTREGADO' ? 'ENTREGADO' : shipment.fulfillmentStatus === 'DESPACHADO' ? 'DESPACHADO' : 'PENDIENTE'}]
-                    </div>
-                )}
-
-                <div style={{ borderTop: '1px dashed #999', margin: '1.5mm 0' }} />
-
-                {fields.includes('clientName') && (
-                    <div style={{ fontSize: '9pt', marginBottom: '0.5mm' }}>
-                        <span style={{ fontWeight: 'bold' }}>{shipment.client?.name || 'Cliente Varios'}</span>
-                    </div>
-                )}
-
-                {fields.includes('phone') && shipment.client?.phone && (
-                    <div style={{ fontSize: '8pt', marginBottom: '0.5mm' }}>
-                        <span>Tel: {shipment.client.phone}</span>
-                    </div>
-                )}
-
-                {fields.includes('address') && shipment.client?.address && (
-                    <div style={{ fontSize: '8pt', marginBottom: '1mm' }}>
-                        <span>{shipment.client.address}</span>
-                    </div>
-                )}
-
-                {fields.includes('delivery') && shipment.delivery?.name && (
-                    <div style={{ fontSize: '8pt', marginBottom: '1mm' }}>
-                        <span>Delivery: <span style={{ fontWeight: 'bold' }}>{shipment.delivery.name}</span>{shipment.delivery.phone ? ` · ${shipment.delivery.phone}` : ''}</span>
-                    </div>
-                )}
-
-                {fields.includes('seller') && shipment.user?.name && (
-                    <div style={{ fontSize: '8pt', marginBottom: '1mm' }}>
-                        <span>Vendedor: <span style={{ fontWeight: 'bold' }}>{shipment.user.name}</span></span>
-                    </div>
-                )}
-
-                {fields.includes('products') && (
-                    <>
-                        <div style={{ borderTop: '1px dashed #999', margin: '1.5mm 0' }} />
-                        <div style={{ fontSize: '8pt', marginBottom: '0.5mm' }}>
-                            {shipment.details?.map((d: any, i: number) => (
+        const renderField = (field: string) => {
+            switch (field) {
+                case 'businessName':
+                    return (
+                        <div key={field} style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11pt', marginBottom: '2mm', textTransform: 'uppercase' }}>
+                            {businessConfig.businessName || 'Mi Negocio'}
+                        </div>
+                    );
+                case 'saleId':
+                    return (
+                        <div key={field} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>Venta #:</span>
+                            <span style={{ fontWeight: 'bold' }}>{shipment.id}</span>
+                        </div>
+                    );
+                case 'seller':
+                    return shipment.user?.name ? (
+                        <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>Vendedor: <span style={{ fontWeight: 'bold' }}>{shipment.user.name}</span></span>
+                        </div>
+                    ) : null;
+                case 'shippingDate':
+                    return shipment.shippingDate ? (
+                        <div key={field} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>Envío:</span>
+                            <span style={{ fontWeight: 'bold' }}>{(() => {
+                                const d = format(new Date(shipment.shippingDate), 'EEEE dd/MM/yyyy', { locale: es });
+                                return d.charAt(0).toUpperCase() + d.slice(1);
+                            })()}</span>
+                        </div>
+                    ) : (
+                        <div key={field} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>Entrega:</span>
+                            <span style={{ fontWeight: 'bold', color: '#10b981' }}>INMEDIATA</span>
+                        </div>
+                    );
+                case 'status':
+                    return (
+                        <div key={field} style={{ textAlign: 'center', fontSize: '8pt', marginBottom: '1mm', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                            [{shipment.fulfillmentStatus === 'ENTREGADO' ? 'ENTREGADO' : shipment.fulfillmentStatus === 'DESPACHADO' ? 'DESPACHADO' : 'PENDIENTE'}]
+                        </div>
+                    );
+                case 'clientName':
+                    return (
+                        <div key={field} style={{ fontSize: '9pt', marginBottom: '0.5mm' }}>
+                            <span style={{ fontWeight: 'bold' }}>{shipment.client?.name || 'Cliente Varios'}</span>
+                        </div>
+                    );
+                case 'phone':
+                    return shipment.client?.phone ? (
+                        <div key={field} style={{ fontSize: '8pt', marginBottom: '0.5mm' }}>
+                            <span>Tel: {shipment.client.phone}</span>
+                        </div>
+                    ) : null;
+                case 'address':
+                    return shipment.client?.address ? (
+                        <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>{shipment.client.address}</span>
+                        </div>
+                    ) : null;
+                case 'delivery':
+                    return shipment.delivery?.name ? (
+                        <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>Delivery: <span style={{ fontWeight: 'bold' }}>{shipment.delivery.name}</span>{shipment.delivery.phone ? ` · ${shipment.delivery.phone}` : ''}</span>
+                        </div>
+                    ) : null;
+                case 'products':
+                    return shipment.details?.length ? (
+                        <div key={field} style={{ fontSize: '8pt', marginBottom: '0.5mm' }}>
+                            {shipment.details.map((d: any, i: number) => (
                                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span>{d.product?.name || 'Producto'}</span>
                                     <span style={{ fontWeight: 'bold' }}>{formatCurrency(d.subtotal)}</span>
                                 </div>
                             ))}
                         </div>
-                    </>
-                )}
-
-                {fields.includes('total') && (
-                    <>
-                        <div style={{ borderTop: '1px dashed #999', margin: '1.5mm 0' }} />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10pt' }}>
+                    ) : null;
+                case 'total':
+                    return (
+                        <div key={field} style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '10pt' }}>
                             <span>TOTAL:</span>
                             <span>{formatCurrency(shipment.total)}</span>
                         </div>
-                    </>
-                )}
+                    );
+                default:
+                    return null;
+            }
+        };
+
+        const renderSection = (fields: string[]) => {
+            const visible = fields.filter((f: string) => flatFields.includes(f));
+            if (visible.length === 0) return null;
+            return (
+                <div key={fields.join('-')}>
+                    {visible.map(renderField)}
+                </div>
+            );
+        };
+
+        return (
+            <div ref={ref} style={{
+                width: '70mm', padding: '3mm', background: 'white', color: 'black',
+                fontFamily: "'Courier New', Courier, monospace", fontSize: '9pt', lineHeight: '1.3'
+            }}>
+                {renderSection(sections.section1 || DEFAULT_SECTIONS.section1)}
+
+                <div style={{ borderTop: '1px dashed #999', margin: '1.5mm 0' }} />
+
+                {renderSection(sections.section2 || DEFAULT_SECTIONS.section2)}
+
+                <div style={{ borderTop: '1px dashed #999', margin: '1.5mm 0' }} />
+
+                {renderSection(sections.section3 || DEFAULT_SECTIONS.section3)}
 
                 <div style={{ borderTop: '1px solid #999', margin: '2mm 0 1mm' }} />
                 <div style={{ textAlign: 'center', fontSize: '7pt', color: '#666' }}>
@@ -125,7 +152,7 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
 
 LabelPreview.displayName = 'LabelPreview';
 
-const LabelModal: React.FC<LabelModalProps> = ({ isOpen, onClose, shipment, businessConfig, labelFields }) => {
+const LabelModal: React.FC<LabelModalProps> = ({ isOpen, onClose, shipment, businessConfig, labelFields, labelSections }) => {
     const printRef = React.useRef<HTMLDivElement>(null);
 
     const handlePrint = () => {
@@ -169,7 +196,7 @@ const LabelModal: React.FC<LabelModalProps> = ({ isOpen, onClose, shipment, busi
 
                         <div style={{ background: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                             <div ref={printRef}>
-                                <LabelPreview shipment={shipment} businessConfig={businessConfig} labelFields={labelFields} />
+                                <LabelPreview shipment={shipment} businessConfig={businessConfig} labelFields={labelFields} labelSections={labelSections} />
                             </div>
                         </div>
 

@@ -270,6 +270,7 @@ const Shipments: React.FC = () => {
                 shipment={labelShipment || {}}
                 businessConfig={config}
                 labelFields={config.labelFields || []}
+                labelSections={config.labelSections}
             />
         </div>
     );

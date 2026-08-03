@@ -24,6 +24,13 @@ const getConfig = async (req, res) => {
                 config.labelFields = [];
             }
         }
+        if (config.labelSections && typeof config.labelSections === 'string') {
+            try {
+                config.labelSections = JSON.parse(config.labelSections);
+            } catch (e) {
+                config.labelSections = null;
+            }
+        }
         // Strip sensitive fields if not authenticated
         if (!req.user) {
             const { geminiApiKey, adminPin, emailWebhookUrl, ...publicConfig } = config;
@@ -48,7 +55,7 @@ const updateConfig = async (req, res) => {
             ticketHeader, ticketFooter, isAutoClosingEnabled, 
             autoClosingTime, sidebarConfig, adminPin,
             emailWebhookUrl, enableEmailTickets, ticketWidth, enableQrCode,
-            labelFields
+            labelFields, labelSections
         } = req.body;
 
         if (isAutoClosingEnabled === false) {
@@ -62,12 +69,15 @@ const updateConfig = async (req, res) => {
         if (labelFields && typeof labelFields === 'object') {
             labelFields = JSON.stringify(labelFields);
         }
+        if (labelSections && typeof labelSections === 'object') {
+            labelSections = JSON.stringify(labelSections);
+        }
 
         const dataToUpdate = { 
             businessName, address, phone, logoUrl, geminiApiKey, 
             ticketHeader, ticketFooter, autoClosingTime, sidebarConfig,
             adminPin, emailWebhookUrl, enableEmailTickets, ticketWidth, enableQrCode,
-            labelFields
+            labelFields, labelSections
         };
 
         const config = await prisma.masterConfig.upsert({

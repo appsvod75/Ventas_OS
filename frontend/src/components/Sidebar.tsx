@@ -84,6 +84,7 @@ const Sidebar: React.FC = () => {
     lookup: { icon: <Search />, label: 'Consultar', path: '/lookup' },
     sellerReport: { icon: <BarChart3 />, label: 'Comisiones', path: '/seller-report' },
     deliveries: { icon: <Truck />, label: 'Deliverys', path: '/deliveries' },
+    shipments: { icon: <Truck />, label: 'Envíos', path: '/shipments' },
   };
 
   // Build menu from config, appending future items not yet in config

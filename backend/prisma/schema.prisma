@@ -332,6 +332,7 @@ model MasterConfig {
   ticketWidth       String   @default("58mm")
   enableQrCode      Boolean  @default(false)
   labelFields       String?
+  labelSections     String?
   updatedAt         DateTime @updatedAt
 }
 
