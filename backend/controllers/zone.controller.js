@@ -19,9 +19,8 @@ const createZone = async (req, res) => {
         return res.status(400).json({ message: 'El nombre de la zona es requerido' });
     }
     try {
-        const existing = await prisma.deliveryZone.findFirst({
-            where: { name: { equals: String(name).trim(), mode: 'insensitive' } }
-        });
+        const zones = await prisma.deliveryZone.findMany({ select: { id: true, name: true } });
+        const existing = zones.find(z => z.name.toLowerCase() === String(name).trim().toLowerCase());
         if (existing) return res.status(409).json({ message: 'La zona ya existe' });
         const zone = await prisma.deliveryZone.create({ data: { name: String(name).trim() } });
         res.status(201).json({ data: zone });
@@ -38,9 +37,8 @@ const updateZone = async (req, res) => {
         return res.status(400).json({ message: 'El nombre de la zona es requerido' });
     }
     try {
-        const existing = await prisma.deliveryZone.findFirst({
-            where: { name: { equals: String(name).trim(), mode: 'insensitive' }, NOT: { id: Number(id) } }
-        });
+        const zones = await prisma.deliveryZone.findMany({ select: { id: true, name: true } });
+        const existing = zones.find(z => z.id !== Number(id) && z.name.toLowerCase() === String(name).trim().toLowerCase());
         if (existing) return res.status(409).json({ message: 'La zona ya existe' });
         const zone = await prisma.deliveryZone.update({
             where: { id: Number(id) },
