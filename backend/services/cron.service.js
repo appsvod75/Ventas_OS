@@ -7,10 +7,13 @@ const { toSVDate } = require('../utils/tz');
 let activeClosingTask = null;
 let activeOpeningTask = null;
 
-const runClosingForDate = async (targetDate) => {
+const runClosingForDate = async (targetDate, options = {}) => {
+    const { force = false } = options;
+    const processed = [];
+    const skipped = [];
     try {
         const dateStr = targetDate.toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
-        console.log(`Iniciando cierre de caja para el día local: ${dateStr}`);
+        console.log(`Iniciando cierre de caja para el día local: ${dateStr}${force ? ' (FORZADO)' : ''}`);
 
         const start = toSVDate(dateStr);
         const end = new Date(`${dateStr}T23:59:59-06:00`);
@@ -19,7 +22,10 @@ const runClosingForDate = async (targetDate) => {
         const branches = await prisma.branch.findMany({ where: { isActive: true } });
 
         for (const branch of branches) {
-            if (branch.closingType === 'periodic' && dayOfWeek !== branch.closeDay) continue;
+            if (branch.closingType === 'periodic' && dayOfWeek !== branch.closeDay && !force) {
+                skipped.push({ name: branch.name, reason: `ciclo semanal (día de cierre: ${branch.closeDay})` });
+                continue;
+            }
 
             const sales = await prisma.saleH.aggregate({
                 where: { branchId: branch.id, createdAt: { gte: start, lte: end } },
@@ -41,6 +47,7 @@ const runClosingForDate = async (targetDate) => {
                 create: { date: start, branchId: branch.id, totalSales, totalExpenses, netAmount }
             });
 
+            processed.push({ name: branch.name, totalSales, totalExpenses, netAmount });
             console.log(`Cierre completado para ${branch.name}. Ventas: ${totalSales}, Gastos: ${totalExpenses}, Neto: ${netAmount}`);
 
             await prisma.cashOpening.updateMany({
@@ -50,7 +57,9 @@ const runClosingForDate = async (targetDate) => {
         }
     } catch (error) {
         console.error('Error durante el cierre de caja:', error);
+        throw error;
     }
+    return { processed, skipped };
 };
 
 const runOpeningForDate = async (targetDate) => {
@@ -101,7 +110,11 @@ const scheduleJobs = async () => {
             if (io) {
                 io.emit('FORCE_LOGOUT', { message: 'Cierre de sistema programado.' });
             }
-            await runClosingForDate(new Date());
+            try {
+                await runClosingForDate(new Date());
+            } catch (error) {
+                console.error('Error en cierre automático programado:', error);
+            }
         });
     } else {
         console.log('Cierre automático deshabilitado.');

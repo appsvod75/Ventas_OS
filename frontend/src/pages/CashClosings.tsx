@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Archive, TrendingDown, TrendingUp, DollarSign, Calendar, Zap, AlertTriangle, X, Eye, Filter, Search, Receipt, ArrowRight, Loader2, User, Lock, Wallet, ShieldCheck, Activity } from 'lucide-react';
+import { Archive, TrendingDown, TrendingUp, DollarSign, Calendar, Zap, AlertTriangle, X, Eye, Filter, Search, Receipt, ArrowRight, Loader2, User, Lock, Wallet, ShieldCheck, Activity, RefreshCw, CheckCircle2, Clock, Truck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
-import { closingApi, CashClosing, ClosingDetails, ClosingMovement, PeriodSummary } from '../services/closing.service';
+import { closingApi, PeriodClosing, ClosingDetails, ClosingMovement, PeriodSummary } from '../services/closing.service';
 import { branchApi, openingApi, adminAuthApi } from '../services/api';
-import { format, subDays } from 'date-fns';
+import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,25 +18,19 @@ const METHOD_STYLES: Record<string, { label: string; shortLabel: string; icon: s
 };
 
 const CashClosings: React.FC = () => {
-    const [closings, setClosings] = useState<CashClosing[]>([]);
-    const [initialBalance, setInitialBalance] = useState(0);
+    const [closings, setClosings] = useState<PeriodClosing[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isForceLoading, setIsForceLoading] = useState(false);
     const [branches, setBranches] = useState<any[]>([]);
 
     // Filters
     const [selectedBranch, setSelectedBranch] = useState<string>('');
-    const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
+    const [startDate, setStartDate] = useState(format(subMonths(new Date(), 3), 'yyyy-MM-dd'));
     const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-
-    // Pagination
-    const [page, setPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
-    const limit = 20;
+    const [showShipping, setShowShipping] = useState(false);
 
     // Modals
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-    const [selectedClosing, setSelectedClosing] = useState<CashClosing | null>(null);
+    const [selectedClosing, setSelectedClosing] = useState<PeriodClosing | null>(null);
     const [closingDetails, setClosingDetails] = useState<ClosingDetails | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [cashCounted, setCashCounted] = useState<string>('');
@@ -62,8 +56,8 @@ const CashClosings: React.FC = () => {
     }, [selectedBranch]);
 
     useEffect(() => {
-        fetchClosings();
-    }, [page, selectedBranch, startDate, endDate]);
+        fetchPeriods();
+    }, [selectedBranch, startDate, endDate]);
 
     const fetchBranches = async () => {
         try {
@@ -74,22 +68,18 @@ const CashClosings: React.FC = () => {
         }
     };
 
-    const fetchClosings = async () => {
+    const fetchPeriods = async () => {
         try {
             setIsLoading(true);
-            const res = await closingApi.getClosings({ 
-                page, 
-                limit, 
+            const res = await closingApi.getPeriodClosings({
                 branchId: selectedBranch || undefined,
                 startDate,
                 endDate
             });
             setClosings(res.data.data);
-            setInitialBalance(Number(res.data.initialBalance || 0));
-            setTotalPages(res.data.pagination.totalPages);
             return res.data.data;
         } catch (error) {
-            toast.error('Error al cargar cortes de caja');
+            toast.error('Error al cargar cortes por período');
             console.error(error);
         } finally {
             setIsLoading(false);
@@ -105,14 +95,15 @@ const CashClosings: React.FC = () => {
         }
     };
 
-    const fetchClosingDetails = async (closing: CashClosing) => {
+    const fetchClosingDetails = async (closing: PeriodClosing) => {
         try {
             setSelectedClosing(closing);
             setIsLoadingDetails(true);
             setCashCounted('');
             const res = await closingApi.getClosingDetails(
-                format(new Date(closing.date), 'yyyy-MM-dd'), 
-                closing.branchId
+                format(new Date(closing.periodStart), 'yyyy-MM-dd'),
+                closing.branchId,
+                format(new Date(closing.periodEnd), 'yyyy-MM-dd')
             );
             setClosingDetails(res.data);
             if (res.data.cashSummary) {
@@ -126,32 +117,26 @@ const CashClosings: React.FC = () => {
         }
     };
 
-    const executeForceClosing = async (date?: string) => {
+    const executeForceClosing = async () => {
         try {
-            if (!date) setIsConfirmModalOpen(false);
             setIsForceLoading(true);
-            await closingApi.forceClosing(date);
-            toast.success(`Cierre recalculado exitosamente${date ? ' para ' + date : ''}`);
-            
-            // Re-fetch everything to ensure main table is updated
-            const newData = await fetchClosings();
-            
-            if (date && selectedClosing && newData) {
-                // Update selectedClosing with new summary values from the fetched list
-                const updated = newData.find(c => 
-                    format(new Date(c.date), 'yyyy-MM-dd') === date && 
-                    c.branchId === selectedClosing.branchId
-                );
+            await closingApi.forceClosing();
+            toast.success('Período recalculado exitosamente');
+
+            // Re-fetch everything to ensure the table is updated
+            const newData = await fetchPeriods();
+
+            if (selectedClosing && newData) {
+                const updated = newData.find(c => c.id === selectedClosing.id);
                 if (updated) {
                     setSelectedClosing(updated);
-                    // Pass the NEW updated object directly to avoid stale closures
                     fetchClosingDetails(updated);
                 } else {
                     fetchClosingDetails(selectedClosing);
                 }
             }
         } catch (error) {
-            toast.error('Error al recalcular el cierre');
+            toast.error('Error al recalcular el período');
             console.error(error);
         } finally {
             setIsForceLoading(false);
@@ -242,7 +227,7 @@ const CashClosings: React.FC = () => {
                 }
                 setIsPinModalOpen(false);
                 setIsOpeningModalOpen(false);
-                fetchClosings();
+                fetchPeriods();
             } catch (e: any) {
                 toast.error(e.response?.data?.message || 'Error al guardar apertura');
             } finally {
@@ -266,15 +251,6 @@ const CashClosings: React.FC = () => {
         return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(val));
     };
 
-    // Calculate running balances for the current view
-    // Since records are DESC (newest first), we calculate from bottom up
-    const closingsWithRunningBalance = [...closings].reverse().reduce((acc: any[], closing, idx) => {
-        const prevBalance = idx === 0 ? initialBalance : acc[idx - 1].runningBalance;
-        const currentBalance = prevBalance + Number(closing.netAmount || 0);
-        acc.push({ ...closing, runningBalance: currentBalance });
-        return acc;
-    }, []).reverse();
-
     return (
         <div className="closings-page">
             <Sidebar />
@@ -292,8 +268,8 @@ const CashClosings: React.FC = () => {
                         <button onClick={openOpeningModal} className="btn-opening">
                             <Wallet size={18} /> Apertura de Caja
                         </button>
-                        <button onClick={() => executeForceClosing()} disabled={isForceLoading} className="btn-warning">
-                            <Zap size={18} /> {isForceLoading ? 'Calculando...' : 'Forzar Cierre Hoy'}
+                        <button onClick={() => fetchPeriods()} className="btn-warning">
+                            <RefreshCw size={18} /> Actualizar
                         </button>
                     </div>
                 </header>
@@ -303,9 +279,17 @@ const CashClosings: React.FC = () => {
                         <div className="plc-card plc-sales">
                             <div className="plc-icon"><TrendingUp size={20} /></div>
                             <div className="plc-info">
-                                <span className="plc-label">Ventas del Periodo</span>
-                                <span className="plc-amount text-emerald-400">{formatCurrency(periodSummary.grossSales)}</span>
+                                <span className="plc-label">Venta Total del Periodo</span>
+                                <span className="plc-amount text-emerald-400">{formatCurrency(periodSummary.totalSales + periodSummary.totalShipping)}</span>
                                 <span className="plc-meta">{periodSummary.salesCount} {periodSummary.salesCount === 1 ? 'venta' : 'ventas'}</span>
+                            </div>
+                        </div>
+                        <div className="plc-card plc-shipping">
+                            <div className="plc-icon"><Truck size={20} /></div>
+                            <div className="plc-info">
+                                <span className="plc-label">Envíos del Periodo</span>
+                                <span className="plc-amount text-violet-400">{formatCurrency(periodSummary.totalShipping)}</span>
+                                <span className="plc-meta">Costo de entregas</span>
                             </div>
                         </div>
                         <div className="plc-card plc-expenses">
@@ -329,95 +313,104 @@ const CashClosings: React.FC = () => {
                     <div className="filters-group">
                         <div className="filter-item">
                             <label><Filter size={14} /> Sucursal</label>
-                            <select value={selectedBranch} onChange={e => { setSelectedBranch(e.target.value); setPage(1); }}>
+                            <select value={selectedBranch} onChange={e => setSelectedBranch(e.target.value)}>
                                 <option value="">Todas las Sucursales</option>
                                 {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                             </select>
                         </div>
                         <div className="filter-item">
                             <label><Calendar size={14} /> Desde</label>
-                            <input type="date" value={startDate} onChange={e => { setStartDate(e.target.value); setPage(1); }} />
+                            <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
                         </div>
                         <div className="filter-item">
                             <label><Calendar size={14} /> Hasta</label>
-                            <input type="date" value={endDate} onChange={e => { setEndDate(e.target.value); setPage(1); }} />
+                            <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                        </div>
+                        <div className="filter-item">
+                            <label style={{ visibility: 'hidden' }}>•</label>
+                            <label className="show-empty-toggle" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={showShipping}
+                                    onChange={e => setShowShipping(e.target.checked)}
+                                    style={{ accentColor: '#3b82f6', width: '15px', height: '15px', cursor: 'pointer' }}
+                                />
+                                Mostrar envíos
+                            </label>
                         </div>
                     </div>
                 </div>
 
                 <div className="table-container">
                     {isLoading ? (
-                        <div className="loading-state">Cargando historial de cortes...</div>
+                        <div className="loading-state">Cargando historial de períodos...</div>
                     ) : closings.length === 0 ? (
                         <div className="empty-state">
                             <Archive size={48} className="empty-icon" />
-                            <p>No se encontraron cortes de caja con los filtros aplicados.</p>
+                            <p>No se encontraron períodos con los filtros aplicados.</p>
                         </div>
                     ) : (
-                        <>
-                            <table className="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>Fecha Operación</th>
-                                        <th>Sucursal</th>
-                                        <th className="text-right">Ventas</th>
-                                        <th className="text-right">Gastos</th>
-                                        <th className="text-right">Neto Día</th>
-                                        <th className="text-right">Saldo Acum.</th>
-                                        <th className="text-center">Detalles</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {closingsWithRunningBalance.map((closing) => {
-                                        const isPositive = Number(closing.netAmount) >= 0;
-                                        return (
-                                            <tr key={closing.id}>
-                                                <td>
-                                                    <div className="flex items-center gap-2 font-bold text-slate-200">
-                                                        <Calendar size={14} className="text-slate-500" />
-                                                        {format(new Date(closing.date), "dd MMM yyyy", { locale: es })}
-                                                    </div>
+                        <table className="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Estado</th>
+                                    <th>Período</th>
+                                    <th>Sucursal</th>
+                                    <th className="text-center">Ventas</th>
+                                    <th className="text-right">Gastos</th>
+                                    {showShipping && <th className="text-right">Envíos</th>}
+                                    <th className="text-right">Neto</th>
+                                    <th className="text-center">Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {closings.map((closing) => {
+                                    const isPositive = Number(closing.netAmount) >= 0;
+                                    return (
+                                        <tr key={closing.id}>
+                                            <td>
+                                                <span className={`status-pill ${closing.estado === 'closed' ? 'st-closed' : 'st-open'}`}>
+                                                    {closing.estado === 'closed'
+                                                        ? <><CheckCircle2 size={13} /> Cerrado</>
+                                                        : <><Clock size={13} /> Abierto</>}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div className="flex items-center gap-2 font-bold text-slate-200">
+                                                    <Calendar size={14} className="text-slate-500" />
+                                                    <span>
+                                                        {format(new Date(closing.periodStart), 'dd MMM', { locale: es })}
+                                                        {' — '}
+                                                        {format(new Date(closing.periodEnd), 'dd MMM yyyy', { locale: es })}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td><span className="branch-tag">{closing.branchName || '---'}</span></td>
+                                            <td className="text-center amounts text-emerald-400">
+                                                {formatCurrency(closing.totalSales)}
+                                            </td>
+                                            <td className="text-right amounts text-rose-400">
+                                                -{formatCurrency(closing.totalExpenses)}
+                                            </td>
+                                            {showShipping && (
+                                                <td className="text-right amounts text-violet-400">
+                                                    {formatCurrency(closing.totalShipping)}
                                                 </td>
-                                                <td><span className="branch-tag">{closing.branch?.name || '---'}</span></td>
-                                                <td className="text-right amounts text-emerald-400">
-                                                    {formatCurrency(closing.totalSales)}
-                                                </td>
-                                                <td className="text-right amounts text-rose-400">
-                                                    -{formatCurrency(closing.totalExpenses)}
-                                                </td>
-                                                <td className={`text-right font-bold amounts ${isPositive ? 'text-blue-400' : 'text-rose-400'}`}>
-                                                    {formatCurrency(closing.netAmount)}
-                                                </td>
-                                                <td className="text-right font-black amounts text-slate-100 bg-slate-800/30">
-                                                    {formatCurrency(closing.runningBalance)}
-                                                </td>
-                                                <td className="text-center">
-                                                    <button className="action-view-btn" onClick={() => fetchClosingDetails(closing)}>
-                                                        <Eye size={18} />
-                                                        <span>Ver Detalles</span>
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                            {totalPages > 1 && (
-                                <div className="pagination">
-                                    <button
-                                        disabled={page === 1}
-                                        onClick={() => setPage(p => Math.max(1, p - 1))}
-                                        className="btn-secondary"
-                                    >Anterior</button>
-                                    <span>Página {page} de {totalPages}</span>
-                                    <button
-                                        disabled={page === totalPages}
-                                        onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                        className="btn-secondary"
-                                    >Siguiente</button>
-                                </div>
-                            )}
-                        </>
+                                            )}
+                                            <td className={`text-right font-bold amounts ${isPositive ? 'text-blue-400' : 'text-rose-400'}`}>
+                                                {formatCurrency(closing.netAmount)}
+                                            </td>
+                                            <td className="text-center">
+                                                <button className="action-view-btn" onClick={() => fetchClosingDetails(closing)}>
+                                                    <Eye size={18} />
+                                                    <span>Ver Detalles</span>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
                     )}
                 </div>
 
@@ -431,21 +424,23 @@ const CashClosings: React.FC = () => {
                                         <Receipt size={22} />
                                     </div>
                                     <div>
-                                        <h2>Auditoría Directa: {selectedClosing.branch?.name}</h2>
+                                        <h2>Auditoría Directa: {selectedClosing.branchName}</h2>
                                         <p className="kardex-subtitle">
-                                            {format(new Date(selectedClosing.date), "EEEE dd 'de' MMMM, yyyy", { locale: es })}
+                                            {format(new Date(selectedClosing.periodStart), "EEEE dd 'de' MMMM", { locale: es })}
+                                            {' — '}
+                                            {format(new Date(selectedClosing.periodEnd), "EEEE dd 'de' MMMM, yyyy", { locale: es })}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="kardex-header-actions">
                                     <button 
-                                        onClick={() => executeForceClosing(format(new Date(selectedClosing.date), 'yyyy-MM-dd'))} 
+                                        onClick={() => executeForceClosing()} 
                                         disabled={isForceLoading} 
                                         className="btn-recalc-modern"
-                                        title="Recalcular todos los cierres de este día"
+                                        title="Recalcular todos los cierres de este período"
                                     >
                                         {isForceLoading ? <Loader2 size={14} className="animate-spin" /> : <Zap size={14} />}
-                                        <span>Recalcular Día</span>
+                                        <span>Recalcular Período</span>
                                     </button>
                                     <button onClick={() => setSelectedClosing(null)} className="kardex-close-btn">
                                         <X size={20} />
@@ -457,10 +452,10 @@ const CashClosings: React.FC = () => {
                                 {isLoadingDetails ? (
                                     <div className="loading-kardex">
                                         <Loader2 size={32} className="animate-spin text-blue-500" />
-                                        <p> Reconstruyendo movimientos del día...</p>
+                                        <p> Reconstruyendo movimientos del período...</p>
                                     </div>
                                 ) : !closingDetails || !closingDetails.movements || closingDetails.movements.length === 0 ? (
-                                    <div className="empty-kardex">No hay movimientos registrados este día.</div>
+                                    <div className="empty-kardex">No hay movimientos registrados en este período.</div>
                                 ) : (
                                     <div className="kardex-list">
                                         {/* Desglose por método de pago */}
@@ -547,37 +542,6 @@ const CashClosings: React.FC = () => {
                     </div>
                 )}
 
-                {isConfirmModalOpen && (
-                    <div className="modal-overlay" onClick={() => setIsConfirmModalOpen(false)}>
-                        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                            <div className="modal-header">
-                                <div className="modal-title">
-                                    <AlertTriangle size={24} className="text-amber-500" />
-                                    <h2>Confirmar Cierre Forzado</h2>
-                                </div>
-                                <button onClick={() => setIsConfirmModalOpen(false)} className="close-btn">
-                                    <X size={20} />
-                                </button>
-                            </div>
-
-                            <div className="modal-body">
-                                <p>¿Estás seguro que deseas <strong>forzar el cálculo</strong> de cierre de caja para el día de hoy?</p>
-                                <p className="text-sm text-slate-400 mt-2">
-                                    Esta acción calculará inmediatamente el balance neto usando las ventas y gastos registrados hasta este momento.
-                                </p>
-                            </div>
-
-                            <div className="modal-actions">
-                                <button onClick={() => setIsConfirmModalOpen(false)} className="btn-cancel">
-                                    Cancelar
-                                </button>
-                                <button onClick={() => executeForceClosing()} className="btn-confirm-warning">
-                                    Aceptar y Forzar Cierre
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
             </main>
 
             {/* MODAL APERTURA */}
@@ -941,7 +905,7 @@ const CashClosings: React.FC = () => {
                 .btn-opening:hover { background: #10b981; color: white; border-color: #10b981; transform: translateY(-1px); }
 
                 .period-live-cards {
-                    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+                    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
                     margin-bottom: 1.5rem; flex-shrink: 0;
                 }
                 .plc-card {
@@ -951,6 +915,7 @@ const CashClosings: React.FC = () => {
                 }
                 .plc-card:hover { transform: translateY(-2px); }
                 .plc-card.plc-sales { border-left: 3px solid #10b981; }
+                .plc-card.plc-shipping { border-left: 3px solid #8b5cf6; }
                 .plc-card.plc-expenses { border-left: 3px solid #ef4444; }
                 .plc-card.plc-net { border-left: 3px solid #3b82f6; }
                 .plc-icon {
@@ -958,13 +923,14 @@ const CashClosings: React.FC = () => {
                     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
                 }
                 .plc-card.plc-sales .plc-icon { background: rgba(16,185,129,0.12); color: #34d399; }
+                .plc-card.plc-shipping .plc-icon { background: rgba(139,92,246,0.12); color: #a78bfa; }
                 .plc-card.plc-expenses .plc-icon { background: rgba(239,68,68,0.12); color: #f43f5e; }
                 .plc-card.plc-net .plc-icon { background: rgba(59,130,246,0.12); color: #60a5fa; }
                 .plc-info { display: flex; flex-direction: column; gap: 0.1rem; }
                 .plc-label { font-size: 0.65rem; color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; }
                 .plc-amount { font-size: 1.3rem; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; }
                 .plc-meta { font-size: 0.7rem; color: #64748b; font-weight: 600; }
-                @media (max-width: 1024px) { .period-live-cards { grid-template-columns: 1fr; gap: 0.6rem; } }
+                @media (max-width: 1024px) { .period-live-cards { grid-template-columns: 1fr 1fr; gap: 0.6rem; } }
 
                 .modal-overlay {
                     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -1057,6 +1023,16 @@ const CashClosings: React.FC = () => {
                 }
                 .cc-pin-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.1); }
                 .cc-pin-error { color: #ef4444; font-size: 0.8rem; font-weight: 700; margin-top: 0.75rem; }
+
+                .status-pill {
+                    display: inline-flex; align-items: center; gap: 0.35rem;
+                    padding: 0.3rem 0.7rem; border-radius: 999px;
+                    font-size: 0.72rem; font-weight: 800; text-transform: uppercase;
+                    letter-spacing: 0.04em; white-space: nowrap;
+                }
+                .status-pill.st-open { background: rgba(16,185,129,0.12); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+                .status-pill.st-closed { background: rgba(100,116,139,0.12); color: #94a3b8; border: 1px solid rgba(100,116,139,0.25); }
+                .text-violet-400 { color: #a78bfa; }
             `}</style>
         </div>
     );

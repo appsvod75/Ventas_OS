@@ -237,8 +237,19 @@ En el modal de cobro, seleccionar **PAGO PARCIAL**:
 - **Modal "Ver Detalles"** (antes "Kardex"): modal compacto con:
    - Tarjetas por método de pago (EFECTIVO/TARJETA/TRANSFERENCIA/CRÉDITO) con count y monto.
    - **Cuadre de efectivo**: apertura + ventas efectivo + abonos a crédito − gastos = esperado. Input "Efectivo contado" con diferencia (CUADRA/SOBRANTE/FALTANTE).
-- **Resumen en vivo en la tabla**: 3 mini-tarjetas en el header (Ventas del Periodo, Gastos del Periodo, Neto) — acumulan desde apertura vigente hasta ahora. Refresco cada 60s.
+- **Resumen en vivo en la tabla**: 4 mini-tarjetas en el header (Venta Total del Período, Envíos del Período, Gastos del Período, Neta Semana/Día) — acumulan desde apertura vigente hasta ahora. Refresco cada 60s.
 - **Resumen del Día/Semana (`/summary`)**: ahora dinámico según closingType (diario = hoy, semanal = desde apertura vigente). Muestra rango "Lun 04/08 → Sáb 09/08" y ventas acumuladas del periodo.
+
+### Cortes de Caja: Vista Semanal por Período (Sesión 05 Ago)
+- La tabla de Cortes de Caja ahora agrupa por **período calendario** (rollup por semana Lun→Sáb según `openDay`/`closeDay`) en vez de por día.
+- **`GET /api/closings/periods`** (`getPeriodClosings`): estado Abierto/Cerrado, ventas total/shipping/expenses/count por bucket. Períodos derivados del calendario (no de aperturas, evita huérfanos).
+- **Filtros**: Sucursal / Desde / Hasta (default 3 meses). Toggle **"Mostrar envíos"** (columna condicional).
+- **Modal de detalle** acepta rango `startDate/endDate`; botón **"Recalcular Período"** llama a `POST /closings/force` (sin fecha) y regenera todos los cierres.
+- **Convención de montos (aprobada)**:
+  - **Venta Total** = ventas + envíos (lo que pagó el cliente).
+  - **Venta Neta** = Venta Total − Envíos − Gastos = `totalSales − totalExpenses` (el envío se cancela porque ya está contado en la venta total).
+  - Cards y tabla usan la misma convención → valores consistentes.
+- **Label "Período en vivo"** se calcula por calendario (`periodStartFor` + `closeDayKeyFor`), no por la última apertura.
 
 ### Reporte de Envíos por Encomendista (Sesión 04-05 Ago)
 - En **Reports** → "Envíos por Encomendista" (módulo cian): tabla con count, total vendido, costo envío acumulado, desglose por estado (pendientes/despachados/entregados).

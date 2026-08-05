@@ -4,7 +4,7 @@ const { toSVDate, toSVNoon, toSVEndOfDay } = require('../utils/tz');
 
 const getClosings = async (req, res) => {
     try {
-        const { branchId, startDate, endDate, page = 1, limit = 15 } = req.query;
+        const { branchId, startDate, endDate, page = 1, limit = 15, includeEmpty } = req.query;
         const skip = (Number(page) - 1) * Number(limit);
 
         const whereClause = {};
@@ -25,11 +25,14 @@ const getClosings = async (req, res) => {
             if (endDate) whereClause.date.lte = toSVEndOfDay(endDate);
         }
 
-        // Filter out empty days (no sales AND no expenses)
-        whereClause.OR = [
-            { totalSales: { gt: 0 } },
-            { totalExpenses: { gt: 0 } }
-        ];
+        // Filter out empty days (no sales AND no expenses), unless includeEmpty is requested
+        const showEmpty = includeEmpty === '1' || includeEmpty === 'true' || includeEmpty === true;
+        if (!showEmpty) {
+            whereClause.OR = [
+                { totalSales: { gt: 0 } },
+                { totalExpenses: { gt: 0 } }
+            ];
+        }
 
         // Calculate initial balance (cumulative net before current filter/start)
         const initialBalanceWhere = { ...whereClause };
@@ -82,9 +85,13 @@ const forceClosing = async (req, res) => {
         
         // Lazy load service to avoid circular dependency crash
         const { runClosingForDate } = require('../services/cron.service');
-        await runClosingForDate(targetDate);
+        const { processed, skipped } = await runClosingForDate(targetDate, { force: true });
         
-        res.json({ message: `Cierre de caja recalculado para ${targetDate.toLocaleDateString()}` });
+        res.json({
+            message: `Cierre de caja recalculado para ${targetDate.toLocaleDateString()}`,
+            processed,
+            skipped
+        });
     } catch (error) {
         console.error('Error in forceClosing:', error);
         res.status(500).json({ message: 'Error ejecutando el cierre manualmente' });
@@ -168,23 +175,10 @@ const getPeriodSummary = async (req, res) => {
             closingType = refBranch.closingType || 'daily';
 
             if (closingType === 'periodic') {
-                const lastOpening = await prisma.cashOpening.findFirst({
-                    where: { branchId: refBranch.id, closedAt: null, date: { lte: now } },
-                    orderBy: { date: 'desc' }
-                });
-                if (lastOpening) {
-                    periodStart = new Date(lastOpening.date);
-                    const sDate = new Date(periodStart);
-                    let endLabel;
-                    if (refBranch.closeDay >= refBranch.openDay) {
-                        endLabel = new Date(sDate);
-                        endLabel.setDate(sDate.getDate() + (refBranch.closeDay - refBranch.openDay));
-                    } else {
-                        endLabel = new Date(sDate);
-                        endLabel.setDate(sDate.getDate() + (7 - refBranch.openDay + refBranch.closeDay));
-                    }
-                    periodLabel = `${sDate.toLocaleDateString('es-SV', { weekday: 'short', day: '2-digit', month: '2-digit' })} → ${endLabel.toLocaleDateString('es-SV', { weekday: 'short', day: '2-digit', month: '2-digit' })}`;
-                }
+                const sDate = periodStartFor(now, refBranch);
+                periodStart = sDate;
+                const endDate = new Date(`${closeDayKeyFor(sDate, refBranch)}T00:00:00-06:00`);
+                periodLabel = `${sDate.toLocaleDateString('es-SV', { weekday: 'short', day: '2-digit', month: '2-digit' })} → ${endDate.toLocaleDateString('es-SV', { weekday: 'short', day: '2-digit', month: '2-digit' })}`;
             }
 
             if (!periodStart) {
@@ -232,7 +226,7 @@ const getPeriodSummary = async (req, res) => {
             totalDiscounts,
             grossSales,
             totalExpenses,
-            netAmount: grossSales - totalExpenses,
+            netAmount: totalSales - totalExpenses,
             salesCount
         });
     } catch (error) {
@@ -243,11 +237,11 @@ const getPeriodSummary = async (req, res) => {
 
 const getClosingDetails = async (req, res) => {
     try {
-        const { date, branchId } = req.query;
+        const { date, endDate, branchId } = req.query;
         if (!date || !branchId) return res.status(400).json({ message: 'Fecha y sucursal requeridos' });
 
         const start = toSVDate(date);
-        const end = toSVEndOfDay(date);
+        const end = endDate ? toSVEndOfDay(endDate) : toSVEndOfDay(date);
 
         const [sales, expenses, opening, creditPayments] = await Promise.all([
             prisma.saleH.findMany({
@@ -336,10 +330,162 @@ const getClosingDetails = async (req, res) => {
     }
 };
 
+const svDateKey = (date) => date.toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+
+const periodStartFor = (date, branch) => {
+    const day = svDateKey(date);
+    if (branch.closingType === 'periodic') {
+        const d = new Date(`${day}T00:00:00-06:00`);
+        const weekday = d.getDay();
+        const openDay = branch.openDay || 1;
+        const offset = (weekday - openDay + 7) % 7;
+        d.setDate(d.getDate() - offset);
+        return d;
+    }
+    return new Date(`${day}T00:00:00-06:00`);
+};
+
+const closeDayKeyFor = (periodStart, branch) => {
+    const day = svDateKey(periodStart);
+    const d = new Date(`${day}T00:00:00-06:00`);
+    let offset;
+    if (branch.closingType === 'periodic') {
+        const openDay = branch.openDay || 1;
+        const closeDay = branch.closeDay || 6;
+        offset = closeDay >= openDay ? (closeDay - openDay) : (7 - openDay + closeDay);
+    } else {
+        offset = 0;
+    }
+    d.setDate(d.getDate() + offset);
+    return svDateKey(d);
+};
+
+const getPeriodClosings = async (req, res) => {
+    try {
+        const { branchId, startDate, endDate } = req.query;
+        const user_role = req.user.role;
+        const user_branch_id = req.user.branch_id;
+
+        let targetBranchId = branchId ? parseInt(branchId) : null;
+        if (user_role !== 'Super Admin' && user_role !== 'Admin') {
+            targetBranchId = user_branch_id;
+        }
+
+        const branches = targetBranchId
+            ? await prisma.branch.findMany({ where: { id: targetBranchId } })
+            : await prisma.branch.findMany({ where: { isActive: true } });
+
+        const startFilter = startDate ? toSVDate(startDate) : null;
+        const endFilter = endDate ? toSVEndOfDay(endDate) : null;
+
+        let initialBalance = 0;
+        const rows = [];
+
+        for (const branch of branches) {
+            const [sales, expenses, openings, closings] = await Promise.all([
+                prisma.saleH.findMany({
+                    where: { branchId: branch.id, reversedAt: null },
+                    select: { createdAt: true, total: true, shipping: true }
+                }),
+                prisma.expense.findMany({
+                    where: { branchId: branch.id },
+                    select: { createdAt: true, amount: true }
+                }),
+                prisma.cashOpening.findMany({
+                    where: { branchId: branch.id },
+                    select: { date: true, closedAt: true }
+                }),
+                prisma.cashClosing.findMany({
+                    where: { branchId: branch.id },
+                    select: { date: true }
+                })
+            ]);
+
+            const currentPeriodKey = svDateKey(periodStartFor(new Date(), branch));
+
+const buckets = {};
+            const touch = (key) => {
+                if (!buckets[key]) buckets[key] = { sales: 0, shipping: 0, count: 0, expenses: 0 };
+            };
+
+            for (const s of sales) {
+                const key = svDateKey(periodStartFor(s.createdAt, branch));
+                touch(key);
+                buckets[key].sales += Number(s.total || 0);
+                buckets[key].shipping += Number(s.shipping || 0);
+                buckets[key].count += 1;
+            }
+            for (const e of expenses) {
+                const key = svDateKey(periodStartFor(e.createdAt, branch));
+                touch(key);
+                buckets[key].expenses += Number(e.amount || 0);
+            }
+
+            const openingsByPeriod = {};
+            for (const o of openings) {
+                const key = svDateKey(periodStartFor(o.date, branch));
+                if (!openingsByPeriod[key]) openingsByPeriod[key] = { exists: false, closedAt: null };
+                openingsByPeriod[key].exists = true;
+                if (o.closedAt) openingsByPeriod[key].closedAt = true;
+            }
+
+            const closingDays = new Set(closings.map(c => svDateKey(c.date)));
+
+            // The current period always appears (live)
+            touch(currentPeriodKey);
+
+            const keys = Object.keys(buckets).sort();
+
+            for (const key of keys) {
+                const b = buckets[key];
+                const periodStart = new Date(`${key}T00:00:00-06:00`);
+                const closeDayKey = closeDayKeyFor(periodStart, branch);
+                const hasOpening = !!openingsByPeriod[key]?.exists;
+                const hasClosing = closingDays.has(closeDayKey);
+                const closed = !!openingsByPeriod[key]?.closedAt || hasClosing;
+                const isCurrent = key === currentPeriodKey;
+
+                // Skip periods with no activity (no sales, no expenses, no opening, no closing)
+                if (!isCurrent && b.sales === 0 && b.expenses === 0 && !hasOpening && !hasClosing) continue;
+
+                const netAmount = b.sales - b.expenses;
+                const periodEnd = new Date(`${closeDayKey}T00:00:00-06:00`);
+
+                const inRange = (!startFilter || periodStart >= startFilter) && (!endFilter || periodStart <= endFilter);
+                if (inRange) {
+                    rows.push({
+                        id: `period-${branch.id}-${key}`,
+                        branchId: branch.id,
+                        branchName: branch.name,
+                        periodStart,
+                        periodEnd,
+                        estado: closed ? 'closed' : 'open',
+                        totalSales: b.sales + b.shipping,
+                        totalShipping: b.shipping,
+                        totalExpenses: b.expenses,
+                        netAmount,
+                        salesCount: b.count
+                    });
+                } else if (startFilter && periodStart < startFilter) {
+                    initialBalance += netAmount;
+                }
+            }
+        }
+
+        rows.sort((a, b) => new Date(b.periodStart).getTime() - new Date(a.periodStart).getTime());
+
+        res.json({ data: rows, initialBalance });
+    } catch (error) {
+        console.error('Error fetching period closings:', error);
+        res.status(500).json({ message: 'Error al obtener cortes por período' });
+    }
+};
+
 module.exports = {
     getClosings,
     forceClosing,
     getTodaySummary,
     getPeriodSummary,
-    getClosingDetails
+    getClosingDetails,
+    getPeriodClosings
 };

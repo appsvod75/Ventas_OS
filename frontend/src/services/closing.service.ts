@@ -67,13 +67,28 @@ export interface ClosingDetails {
     cashSummary: CashSummary;
 }
 
+export interface PeriodClosing {
+    id: string;
+    branchId: number;
+    branchName: string;
+    periodStart: string;
+    periodEnd: string;
+    estado: 'open' | 'closed';
+    totalSales: number;
+    totalShipping: number;
+    totalExpenses: number;
+    netAmount: number;
+    salesCount: number;
+}
+
 export const closingApi = {
     getClosings: (params?: { 
         branchId?: number | string; 
         startDate?: string; 
         endDate?: string; 
         page?: number; 
-        limit?: number 
+        limit?: number;
+        includeEmpty?: boolean;
     }) => api.get<{ data: CashClosing[], initialBalance: number, pagination: { total: number, page: number, limit: number, totalPages: number } }>(API_URL, { params }),
 
     getTodaySummary: () =>
@@ -82,9 +97,15 @@ export const closingApi = {
     getPeriodSummary: (branchId?: number) =>
         api.get<PeriodSummary>(`${API_URL}/period-summary`, { params: { branchId } }),
 
+    getPeriodClosings: (params?: {
+        branchId?: number | string;
+        startDate?: string;
+        endDate?: string;
+    }) => api.get<{ data: PeriodClosing[], initialBalance: number }>(`${API_URL}/periods`, { params }),
+
     forceClosing: (date?: string) =>
         api.post(`${API_URL}/force`, { date }),
 
-    getClosingDetails: (date: string, branchId: number) =>
-        api.get<ClosingDetails>(`${API_URL}/details`, { params: { date, branchId } })
+    getClosingDetails: (date: string, branchId: number, endDate?: string) =>
+        api.get<ClosingDetails>(`${API_URL}/details`, { params: { date, branchId, endDate } })
 };

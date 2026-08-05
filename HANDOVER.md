@@ -136,7 +136,7 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 | **Settings: hora de apertura** | Nuevo campo `autoOpeningTime` en MasterConfig (default "06:00"). Toggle independiente. Requiere `prisma db push` (nueva columna) |
 | **Settings: branchConfig carga** | Fix: `branchConfig` se pobla al cargar branches (antes solo se seteaba al hacer cambios manuales, por eso recargaba como "daily") |
 | **Resumen dinámico (DailySummary)** | `/summary` ahora usa `getPeriodSummary`: rango según apertura vigente (diario = hoy, periódico = desde apertura vigente hasta ahora). Título "Resumen de la Semana" si es periódico. Muestra ventas acumuladas del periodo + count |
-| **Cortes de Caja: resumen en vivo** | 3 mini-tarjetas en header: Ventas del Periodo (con count), Gastos del Periodo, Neto (Semana/Día). Refresco cada 60s. Respeta sucursal seleccionada |
+| **Cortes de Caja: resumen en vivo** | 4 mini-tarjetas en header: Venta Total del Período (con count), Envíos del Período, Gastos del Período, Neta (Semana/Día). Refresco cada 60s. Respeta sucursal seleccionada |
 | **Timezone util centralizado** | `backend/utils/tz.js` con `toSVDate`, `toSVNoon`, `toSVEndOfDay`. Reemplaza 34 patrones hardcodeados en 8 controllers (sale, opening, closing, stats, purchase, expense, inventory, projection). Evita futuros bugs de off-by-one por zona horaria |
 
 ### ⏳ Pendiente de sesiones anteriores
@@ -151,6 +151,24 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 ### 📝 Notas
 - **Deploy requiere `prisma db push`** (nueva columna `autoOpeningTime` en MasterConfig). No borra datos.
 - Recrear Prisma Client en el VPS: `npx prisma generate && npx prisma db push`
+
+## Última sesión (05 Ago 2026) — Depuración de auditoría, Punto 1 (Cierres de Caja) ✅
+
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Vista semanal de cortes (rollup por período)** | `getPeriodClosings` + `GET /api/closings/periods`. `CashClosings.tsx` rediseñado: filas por período calendario (Lun→Sáb según `openDay`/`closeDay`), badge Abierto/Cerrado, filtros Sucursal/Desde/Hasta, default 3 meses. Detalle con rango `startDate/endDate` |
+| **Estado de período** | `estado: 'open'/'closed'` según `closedAt` de apertura o existencia de `CashClosing` en el día de cierre |
+| **Toggle "Mostrar envíos"** | Columna Envíos condicional en la tabla (reemplaza el checkbox "mostrar días sin movimiento") |
+| **Recalcular Período** | Botón en el modal de detalle → `POST /closings/force` (sin fecha) recalcula todos los cierres del período |
+| **Convención de montos (aprobada)** | **Venta Total = ventas + envíos** (`totalSales + totalShipping`). **Venta Neta = Venta Total − Envíos − Gastos** = `totalSales − totalExpenses` (el envío se cancela porque ya está contado en la venta total). Aplicada en cards y tabla (consistentes) |
+| **4 cards de resumen en vivo** | Venta Total del Período, Envíos del Período, Gastos del Período, Neta (Semana/Día). Refresco 60s |
+| **Label "Período en vivo" calendario** | `getPeriodSummary` dejó de anclarse en la última apertura; ahora usa `periodStartFor(now, branch)` + `closeDayKeyFor` (ej. hoy → `lun 03/08 → sáb 08/08`) |
+| **Fix `RangeError: Invalid time value`** | `periodStart`/`periodEnd` llegan como ISO completo; se concatenaba `'T00:00:00'` → fecha inválida. Ahora `new Date(periodStart)` directo |
+| **AUDITORIA.md creado** | Documento de seguimiento de auditoría con checkboxes (Punto 1 resuelto + hallazgos pendientes + anexo) |
+
+### ⏳ Pendiente (anexado a AUDITORIA.md)
+- **Desglose auditable del detalle**: anulaciones se contabilizan como gastos pero no se distingue su origen. En el modal "Ver Detalles" falta el total de ventas que suman las formas de pago, y se quiere una acción junto al cuadre que abra un modal con el desglose de cada valor (p. ej. Gastos del período → detalle de cada gasto/anulación).
 
 ## Última sesión (29 Jul 2026) — Resumen de cambios
 
