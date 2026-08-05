@@ -368,7 +368,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                     </div>
                                     <button onClick={() => { setSelectedClient(null); setSelectedAddressId(null); }} className="btn-remove-client"><X size={16} /></button>
                                     {(shipping > 0 || (selectedClient.addresses || []).length > 0) && (
-                                        <div style={{ marginTop: '0.75rem', width: '100%', flexBasis: '100%' }}>
+                                        <div style={{ marginTop: '0.35rem', width: '100%', flexBasis: '100%' }}>
                                             {(() => {
                                                 const addresses = selectedClient.addresses || [];
                                                 if (addresses.length === 0) {
@@ -707,7 +707,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                 .search-input-wrapper input { flex: 1; padding: 0; height: 100%; border: none; background: transparent; font-weight: 700; outline: none; color: white; font-size: 0.85rem; }
                 .search-icon { color: #64748b; margin-right: 8px; }
                 
-                .selected-client-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+                .selected-client-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
                 .client-avatar { width: 32px; height: 32px; background: rgba(59,130,246,0.2); color: #60a5fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
                 .client-name { font-weight: 800; color: white; font-size: 0.85rem; }
                 .client-meta { font-size: 0.65rem; color: #94a3b8; font-weight: 700; }
