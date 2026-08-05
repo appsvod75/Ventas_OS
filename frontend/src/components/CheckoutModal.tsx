@@ -314,7 +314,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                         <p className="client-meta">{selectedClient.documentId || 'Sin DNI'}</p>
                                     </div>
                                     <button onClick={() => { setSelectedClient(null); setSelectedAddressId(null); }} className="btn-remove-client"><X size={16} /></button>
-                                    {(shipping > 0 || (selectedClient.addresses || []).length > 1) && (
+                                    {(shipping > 0 || (selectedClient.addresses || []).length > 0) && (
                                         <div style={{ marginTop: '0.75rem', width: '100%' }}>
                                             {(() => {
                                                 const addresses = selectedClient.addresses || [];
