@@ -23,6 +23,10 @@ const resetSales = async (req, res) => {
             prisma.clientPayment.deleteMany(),
             prisma.saleD.deleteMany(),
             prisma.saleH.deleteMany(),
+            prisma.purchaseD.deleteMany(),
+            prisma.purchaseH.deleteMany(),
+            prisma.transferDetail.deleteMany(),
+            prisma.transfer.deleteMany(),
             prisma.cashClosing.deleteMany(),
             prisma.expense.deleteMany(),
             prisma.inventoryLot.deleteMany(),
@@ -32,9 +36,10 @@ const resetSales = async (req, res) => {
         // Reset autoincrement counter in SQLite
         try {
             await prisma.$executeRawUnsafe("DELETE FROM sqlite_sequence WHERE name = 'SaleH'");
+            await prisma.$executeRawUnsafe("DELETE FROM sqlite_sequence WHERE name = 'SaleD'");
         } catch (_) {}
 
-        res.json({ message: 'Datos de ventas y financieros eliminados correctamente. Inventario reiniciado a cero.' });
+        res.json({ message: 'Puesta a cero completada: ventas, abonos, créditos, compras, gastos, cierres de caja e inventario reiniciados.' });
     } catch (error) {
         console.error('Error in resetSales:', error);
         res.status(500).json({ message: 'Error al eliminar datos de ventas' });

@@ -374,7 +374,7 @@ const Settings: React.FC = () => {
             setLoading(true);
             if (dangerModal.type === 'sales') {
                 await configApi.resetSales(pin);
-                toast.success('Historial de ventas reiniciado correctamente');
+                toast.success('Puesta a cero completada: ventas, abonos, créditos, compras, gastos, cierres e inventario reiniciados');
             } else if (dangerModal.type === 'inventory') {
                 await configApi.resetInventory(pin);
                 toast.success('Stock de inventario reiniciado a cero');
@@ -1195,9 +1195,10 @@ const Settings: React.FC = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
                                 <div style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '2rem', borderRadius: '20px', border: '1px solid #334155', display: 'flex', flexDirection: 'column' }}>
                                     <div style={{ color: '#ef4444', marginBottom: '1rem' }}><Trash2 size={32} /></div>
-                                    <h4 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '0.75rem' }}>Borrar Historial de Ventas</h4>
+                                    <h4 style={{ color: 'white', fontSize: '1.2rem', marginBottom: '0.75rem' }}>Puesta a Cero</h4>
                                     <p style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '1.5rem', flex: 1 }}>
-                                        Elimina permanentemente todas las ventas, cierres de caja, gastos y aplicaciones de pago de clientes. Los productos y clientes permanecerán intactos.
+                                        Elimina TODO lo relacionado a operaciones: ventas, abonos, créditos, compras, gastos, cortes de caja, lotes, transferencias de inventario y pone el stock a cero (la próxima venta será #1).
+                                        <span style={{ display: 'block', marginTop: '0.5rem', color: '#94a3b8' }}><strong style={{ color: '#10b981' }}>Se conserva:</strong> clientes, direcciones, zonas de envío, catálogo de productos, categorías, usuarios y configuraciones.</span>
                                     </p>
                                     <button 
                                         type="button"
@@ -1206,7 +1207,7 @@ const Settings: React.FC = () => {
                                         onMouseOver={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)')}
                                         onMouseOut={e => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)')}
                                     >
-                                        Limpiar Ventas y Finanzas
+                                        Puesta a Cero
                                     </button>
                                 </div>
 
@@ -1311,13 +1312,13 @@ const Settings: React.FC = () => {
                     onClose={() => setDangerModal({ isOpen: false, type: null })}
                     onConfirm={handleConfirmReset}
                     title={
-                        dangerModal.type === 'sales' ? "Confirmar Borrado de Ventas" : 
+                        dangerModal.type === 'sales' ? "Confirmar Puesta a Cero" : 
                         dangerModal.type === 'inventory' ? "Confirmar Reinicio de Stock" :
                         dangerModal.type === 'counter' ? "Reiniciar Contador de Ventas" :
                         "Confirmar Borrado de Productos"
                     }
                     description={
-                        dangerModal.type === 'sales' ? "Esta acción eliminará TODO el historial financiero. No hay marcha atrás. Ingresa el PIN de Super Admin para proceder." :
+                        dangerModal.type === 'sales' ? "Se borrará TODO lo relacionado a operaciones: ventas, abonos, créditos, compras, gastos, cortes de caja, lotes y stock. Se conservan clientes, direcciones, zonas, catálogo de productos y usuarios. No hay marcha atrás. Ingresa el PIN de Super Admin para proceder." :
                         dangerModal.type === 'inventory' ? "Se pondrán todos los stocks a cero y se borrarán los lotes. Ingresa el PIN de Super Admin para proceder." :
                         dangerModal.type === 'counter' ? "La próxima venta iniciará con el folio #1. Ingresa el PIN de Super Admin para proceder." :
                         "Se eliminarán TODOS los productos permanentemente. Las categorías se conservarán. Ingresa el PIN de Super Admin para proceder."
