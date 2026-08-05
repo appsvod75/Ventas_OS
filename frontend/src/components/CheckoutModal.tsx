@@ -426,7 +426,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                             ) : (
                                 <div className="client-search-container">
                                     <div className="search-input-wrapper">
-                                        <Search size={16} className="search-icon" />
+                                        <Search size={16} className="co-search-icon" />
                                         <input
                                             type="text" placeholder="Buscar cliente..."
                                             value={searchClient} onChange={e => setSearchClient(e.target.value)}
@@ -704,8 +704,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                 
                 .search-input-wrapper { display: flex; align-items: center; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 0 10px; height: 38px; position: relative; transition: all 0.2s; }
                 .search-input-wrapper:focus-within { border-color: #3b82f6; background: rgba(0,0,0,0.4); box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
-                .search-input-wrapper input { flex: 1; padding: 0; height: 100%; border: none; background: transparent; font-weight: 700; outline: none; color: white; font-size: 0.85rem; }
-                .search-icon { color: #64748b; margin-right: 8px; }
+                .search-input-wrapper input { flex: 1; min-width: 0; padding: 0; height: 100%; border: none; background: transparent; font-weight: 700; outline: none; color: white; font-size: 0.85rem; }
+                .co-search-icon { position: static; flex-shrink: 0; color: #64748b; margin-right: 8px; display: inline-flex; align-items: center; }
                 
                 .selected-client-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px 10px; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
                 .client-avatar { width: 32px; height: 32px; background: rgba(59,130,246,0.2); color: #60a5fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
