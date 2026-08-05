@@ -4,7 +4,7 @@ const { toSVDate, toSVEndOfDay } = require('../utils/tz');
 const { getIO } = require('../services/socketManager');
 
 const createSale = async (req, res) => {
-    let { branch_id, items, payment_method, discount = 0, client_id, due_date, amount_tendered, change, customDate, shipping = 0, balance, shipping_date, fulfillment_status, delivery_id } = req.body;
+    let { branch_id, items, payment_method, discount = 0, client_id, due_date, amount_tendered, change, customDate, shipping = 0, balance, shipping_date, fulfillment_status, delivery_id, client_address_id } = req.body;
     let user_id = req.body.user_id || req.user.id;
     const user_role = req.user.role;
     // Solo admin puede asignar venta a otro usuario
@@ -135,6 +135,7 @@ const createSale = async (req, res) => {
                     shippingDate: shipping_date ? toSVDate(shipping_date) : null,
                     fulfillmentStatus: fulfillment_status || 'VENDIDO',
                     ...(delivery_id && { deliveryId: parseInt(delivery_id) }),
+                    ...(client_address_id && { clientAddressId: parseInt(client_address_id) }),
                     balance: balance !== undefined ? Number(balance) : (payment_method === 'CREDITO' ? finalTotal : 0),
                     amountTendered: Number(amount_tendered) || finalTotal,
                     change: Number(change) || 0,
@@ -571,6 +572,7 @@ const getShipments = async (req, res) => {
             where,
             include: {
                 client: { select: { name: true, phone: true, address: true, email: true } },
+                clientAddress: { select: { label: true, address: true, zone: { select: { name: true } } } },
                 user: { select: { name: true } },
                 branch: { select: { name: true } },
                 delivery: { select: { name: true, phone: true } },

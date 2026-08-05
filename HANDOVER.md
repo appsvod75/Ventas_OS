@@ -180,7 +180,35 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 > Requerimiento del dueño antes de salir a producción.
 
 - [ ] **Limpieza de datos**: dejar solo "vivos" **catálogo de productos, clientes y usuarios**. Limpiar el área de ventas, cierres, créditos y demás datos de prueba.
-- [ ] **Nueva tabla de direcciones**: un mismo cliente puede tener **varias direcciones**. Crear tabla nueva (p. ej. `ClientAddress`) y modelar la relación con `Client` (uno-a-muchos). Elegir cuál dirección se usa en venta/label de envío.
+- [x] **Nueva tabla de direcciones**: implementada la tabla `ClientAddress` (un cliente puede tener **varias direcciones**). Ver "Última sesión (05 Ago 2026)". En VPS: `npx prisma generate && npx prisma db push` + correr `node scripts/backfill_client_addresses.js` una vez.
+
+## Última sesión (05 Ago 2026) — Multidirección de clientes
+
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Tabla `ClientAddress`** | `id, clientId (cascade), label?, address, isDefault, createdAt` + `@@index([clientId])`. Relación `Client.addresses` y `SaleH.clientAddressId` (nullable) + `clientAddress`. Requiere `prisma db push` en VPS |
+| **Backfill** | `backend/scripts/backfill_client_addresses.js`: por cliente sin direcciones crea default `{ label: 'Casa', address: Client.address }`. Correr UNA vez en VPS |
+| **CRUD backend direcciones** | `client.controller.js`: `getClientAddresses`, `createClientAddress` (auto-default si es primera), `updateClientAddress`, `deleteClientAddress` (promueve siguiente a default), `setDefaultClientAddress`. `getClients` incluye `addresses` ordenadas `isDefault desc, id asc`. Rutas en `client.routes.js` (`/:id/addresses`, `/:id/addresses/:addressId`, `PATCH .../default`) |
+| **Venta guarda dirección** | `sale.controller.js` guarda `client_address_id` → `SaleH.clientAddressId`. `POS.tsx` pasa `client_address_id` en `saleData` |
+| **Gestor en Clientes** | `Clients.tsx`: botón 📍 por fila abre modal con lista de direcciones (agregar con etiqueta, editar, eliminar, marcar principal). Columna DIRECCIÓN muestra la default + badge `+N`. Input de dirección movido debajo del campo Nombre |
+| **Selector en checkout** | `CheckoutModal.tsx`: selector "Dirección de entrega" debajo del nombre del cliente (visible si `shipping > 0` o hay varias direcciones). Al crear cliente se recargan las direcciones |
+| **Label usa dirección de la venta** | `LabelModal.tsx` y detalle de `Shipments.tsx` muestran `clientAddress` de la venta con fallback a `Client.address` |
+
+### ✅ Zonas de envío (mismo día)
+| Feature | Descripción |
+|---------|-------------|
+| **Tabla `DeliveryZone`** | `id, name, createdAt` + relación `ClientAddress.zoneId` (FK `SetNull`) + `@@index([zoneId])`. Datos maestros para evitar duplicados por tipeo y poder agrupar reportes |
+| **CRUD zonas** | `zone.controller.js` + `zone.routes.js` registrado en `server.js` (`/api/zones`). `createZone`/`updateZone` validan duplicados (insensitive). `deleteZone` bloquea si hay direcciones en uso |
+| **Zona por dirección** | `client.controller.js`: `getClientAddresses`/`getClients` incluyen `zone`; `createClientAddress`/`updateClientAddress` aceptan `zoneId` |
+| **Crear/agregar zona al vuelo** | En el modal de direcciones (Clients): selector de zona en crear y editar dirección + botón ➕ "Crear zona" (la crea y la asigna). Si el nombre ya existe, se asigna la existente (sin duplicar) |
+| **Zona en checkout** | El selector de dirección de `CheckoutModal` muestra la zona en cada opción (`(Zona)`) |
+| **Zona en label** | Campo imprimible **`zone`** opcional en `Settings.tsx` (`allFieldDefs`) y `LabelModal.tsx` (muestra `clientAddress.zone.name`). Se activa en Settings → Label. `getShipments` incluye `clientAddress.zone` |
+
+### Notas de despliegue
+- Backend: `schema.prisma`, `client.controller.js`, `client.routes.js`, `sale.controller.js`, `zone.controller.js` (nuevo), `zone.routes.js` (nuevo), `server.js`, `scripts/backfill_client_addresses.js`. Luego `npx prisma generate && npx prisma db push` (crea `DeliveryZone` + columna `zoneId`) y `node scripts/backfill_client_addresses.js` (una vez).
+- Frontend: subir `dist/` íntegro (cambios en `CheckoutModal`, `POS`, `Clients`, `LabelModal`, `Shipments`, `Settings`).
+- `Client.address` se mantiene (legacy) y se sincroniza con la dirección default al crear/editar cliente.
 
 ## Última sesión (29 Jul 2026) — Resumen de cambios
 

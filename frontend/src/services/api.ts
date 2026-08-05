@@ -71,7 +71,20 @@ export const clientApi = {
     createClient: (data: any) => api.post('/clients', data),
     updateClient: (id: number, data: any) => api.put(`/clients/${id}`, data),
     deleteClient: (id: number) => api.delete(`/clients/${id}`),
-    getClientStatement: (id: number) => api.get(`/clients/${id}/statement`)
+    getClientStatement: (id: number) => api.get(`/clients/${id}/statement`),
+    // Multidirección
+    getClientAddresses: (id: number) => api.get(`/clients/${id}/addresses`),
+    createClientAddress: (id: number, data: any) => api.post(`/clients/${id}/addresses`, data),
+    updateClientAddress: (id: number, addressId: number, data: any) => api.put(`/clients/${id}/addresses/${addressId}`, data),
+    setDefaultAddress: (id: number, addressId: number) => api.patch(`/clients/${id}/addresses/${addressId}/default`),
+    deleteClientAddress: (id: number, addressId: number) => api.delete(`/clients/${id}/addresses/${addressId}`)
+};
+
+export const zoneApi = {
+    getAll: () => api.get('/zones'),
+    create: (data: any) => api.post('/zones', data),
+    update: (id: number, data: any) => api.put(`/zones/${id}`, data),
+    delete: (id: number) => api.delete(`/zones/${id}`)
 };
 
 export const purchaseApi = {

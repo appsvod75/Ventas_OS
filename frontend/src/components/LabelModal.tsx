@@ -22,7 +22,7 @@ const DEFAULT_SECTIONS = {
 const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig: any; labelFields: string[]; labelSections?: any }>(
     ({ shipment, businessConfig, labelFields, labelSections }, ref) => {
         const formatCurrency = (val: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-        const flatFields = labelFields.length > 0 ? labelFields : ['businessName', 'clientName', 'phone', 'address', 'shippingDate', 'saleId', 'total'];
+        const flatFields = labelFields.length > 0 ? labelFields : ['businessName', 'clientName', 'phone', 'address', 'zone', 'shippingDate', 'saleId', 'total'];
         const sections = labelSections && typeof labelSections === 'object'
             ? labelSections
             : DEFAULT_SECTIONS;
@@ -81,12 +81,22 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
                             <span>Tel: {shipment.client.phone}</span>
                         </div>
                     ) : null;
-                case 'address':
-                    return shipment.client?.address ? (
+                case 'address': {
+                    const address = shipment.clientAddress?.address || shipment.client?.address;
+                    return address ? (
                         <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>
-                            <span>{shipment.client.address}</span>
+                            <span>{shipment.clientAddress?.label ? `${shipment.clientAddress.label}: ` : ''}{address}</span>
                         </div>
                     ) : null;
+                }
+                case 'zone': {
+                    const zone = shipment.clientAddress?.zone?.name;
+                    return zone ? (
+                        <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>
+                            <span>Zona: <span style={{ fontWeight: 'bold' }}>{zone}</span></span>
+                        </div>
+                    ) : null;
+                }
                 case 'delivery':
                     return shipment.delivery?.name ? (
                         <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>

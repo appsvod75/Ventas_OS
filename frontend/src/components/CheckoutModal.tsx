@@ -11,7 +11,7 @@ interface CheckoutModalProps {
     orderTotal: number;
     shipping?: number;
     onClose: () => void;
-    onConfirm: (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number, deliveryId?: number) => void;
+    onConfirm: (paymentMethod: string, amountTendered: number, targetClient: any | null, dueDate?: string, customDate?: string, shippingDate?: string, userId?: number, deliveryId?: number, clientAddressId?: number | null) => void;
 }
 
 const PaymentMethod = {
@@ -43,6 +43,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
     const [showNewDeliveryForm, setShowNewDeliveryForm] = useState(false);
     const [newDeliveryName, setNewDeliveryName] = useState('');
     const [deliveryFiltered, setDeliveryFiltered] = useState<any[]>([]);
+    const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
 
     const isTablet = true; // FORZADO PARA PC (Videos): window.matchMedia('(min-width: 901px) and (max-width: 1300px)').matches;
 
@@ -112,8 +113,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
         if (!newClientData.name || !newClientData.phone) return;
         try {
             const res = await clientApi.createClient(newClientData);
-            setClients([...clients, res.data.data]);
-            setSelectedClient(res.data.data);
+            setClients(prev => [...prev, res.data.data]);
+            const refetched = await clientApi.getClients();
+            setClients(refetched.data);
+            const created = refetched.data.find((c: any) => c.id === res.data.data.id) || res.data.data;
+            setSelectedClient(created);
+            const def = (created.addresses || []).find((a: any) => a.isDefault) || (created.addresses || [])[0];
+            setSelectedAddressId(def ? def.id : null);
             setShowNewClientForm(false);
             setSearchClient('');
             toast.success("Cliente creado con éxito");
@@ -129,11 +135,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
         if (isPartialPayment) {
             const partialAmount = parseFloat(amountTendered) || 0;
             const paymentLabel = method + '+CREDITO';
-            onConfirm(paymentLabel, partialAmount, selectedClient, dueDate, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined, delId);
+            onConfirm(paymentLabel, partialAmount, selectedClient, dueDate, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined, delId, selectedAddressId);
             return;
         }
         const finalTendered = method === PaymentMethod.CASH ? (parseFloat(amountTendered) || orderTotal) : orderTotal;
-        onConfirm(method, finalTendered, selectedClient, method === PaymentMethod.CREDIT ? dueDate : undefined, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined, delId);
+        onConfirm(method, finalTendered, selectedClient, method === PaymentMethod.CREDIT ? dueDate : undefined, isAdmin ? saleDate : undefined, shipDate, selectedSellerId || undefined, delId, selectedAddressId);
     };
 
     useEffect(() => {
@@ -307,7 +313,35 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                         <p className="client-name">{selectedClient.name}</p>
                                         <p className="client-meta">{selectedClient.documentId || 'Sin DNI'}</p>
                                     </div>
-                                    <button onClick={() => setSelectedClient(null)} className="btn-remove-client"><X size={16} /></button>
+                                    <button onClick={() => { setSelectedClient(null); setSelectedAddressId(null); }} className="btn-remove-client"><X size={16} /></button>
+                                    {(shipping > 0 || (selectedClient.addresses || []).length > 1) && (
+                                        <div style={{ marginTop: '0.75rem', width: '100%' }}>
+                                            {(() => {
+                                                const addresses = selectedClient.addresses || [];
+                                                if (addresses.length === 0) {
+                                                    return <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0 }}>Cliente sin direcciones registradas.</p>;
+                                                }
+                                                return (
+                                                    <>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
+                                                            <MapPin size={13} /> Dirección de entrega
+                                                        </label>
+                                                        <select
+                                                            value={selectedAddressId ?? ''}
+                                                            onChange={e => setSelectedAddressId(e.target.value ? Number(e.target.value) : null)}
+                                                            style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                                                        >
+                                                            {addresses.map((a: any) => (
+                                                                <option key={a.id} value={a.id}>
+                                                                    {a.label ? `${a.label}: ` : ''}{a.address}{a.zone ? ` (${a.zone.name})` : ''}{a.isDefault ? ' (default)' : ''}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </>
+                                                );
+                                            })()}
+                                        </div>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="client-search-container">
@@ -323,7 +357,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                             <div className="client-results-dropdown">
                                                 {filteredClients.length > 0 ? (
                                                     filteredClients.map(c => (
-                                                        <button key={`client-${c.id}`} onClick={() => { setSelectedClient(c); setSearchClient(''); }} className="result-item">
+                                                        <button key={`client-${c.id}`} onClick={() => { setSelectedClient(c); setSearchClient(''); const def = (c.addresses || []).find((a: any) => a.isDefault) || (c.addresses || [])[0]; setSelectedAddressId(def ? def.id : null); }} className="result-item">
                                                             <div className="result-name">{highlightMatch(c.name, searchClient)}</div>
                                                             <div className="result-meta">{highlightMatch(c.documentId, searchClient)}</div>
                                                         </button>

@@ -696,6 +696,7 @@ const Settings: React.FC = () => {
                                         { key: 'clientName', label: 'Nombre del cliente' },
                                         { key: 'phone', label: 'Teléfono' },
                                         { key: 'address', label: 'Dirección' },
+                                        { key: 'zone', label: 'Zona' },
                                         { key: 'products', label: 'Productos' },
                                         { key: 'delivery', label: 'Delivery' },
                                         { key: 'seller', label: 'Vendedor' },

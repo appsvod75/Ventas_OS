@@ -203,7 +203,7 @@ const Shipments: React.FC = () => {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.5rem', fontSize: '0.8rem' }}>
                                 <div><span style={{ color: '#64748b', fontWeight: 700 }}>Cliente:</span> <span style={{ color: 'white', fontWeight: 700 }}>{detailShipment.client?.name || 'Clientes Varios'}</span></div>
                                 <div><span style={{ color: '#64748b', fontWeight: 700 }}>Tel:</span> <span style={{ color: 'white' }}>{detailShipment.client?.phone || '---'}</span></div>
-                                <div><span style={{ color: '#64748b', fontWeight: 700 }}>Dirección:</span> <span style={{ color: 'white' }}>{detailShipment.client?.address || '---'}</span></div>
+                                <div><span style={{ color: '#64748b', fontWeight: 700 }}>Dirección:</span> <span style={{ color: 'white' }}>{detailShipment.clientAddress?.address || detailShipment.client?.address || '---'}</span></div>
                                 <div><span style={{ color: '#64748b', fontWeight: 700 }}>Vendedor:</span> <span style={{ color: 'white' }}>{detailShipment.user?.name}</span></div>
                                 <div><span style={{ color: '#64748b', fontWeight: 700 }}>Pago:</span> <span style={{ color: 'white' }}>{detailShipment.paymentMethod}</span></div>
                                 <div><span style={{ color: '#64748b', fontWeight: 700 }}>Estado:</span> <span style={{ color: STATUS_CONFIG[detailShipment.fulfillmentStatus]?.color || '#94a3b8', fontWeight: 800 }}>{STATUS_CONFIG[detailShipment.fulfillmentStatus]?.label || detailShipment.fulfillmentStatus}</span></div>

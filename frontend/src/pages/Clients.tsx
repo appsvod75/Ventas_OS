@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Users, Edit3, CheckCircle, X, CreditCard, Phone, Mail, MapPin, User, FileText, Calendar, DollarSign, ArrowRight, Trash2, ShieldAlert, Truck } from 'lucide-react';
-import { clientApi, adminAuthApi } from '../services/api';
+import { Search, UserPlus, Users, Edit3, CheckCircle, X, CreditCard, Phone, Mail, MapPin, User, FileText, Calendar, DollarSign, ArrowRight, Trash2, ShieldAlert, Truck, Plus } from 'lucide-react';
+import { clientApi, adminAuthApi, zoneApi } from '../services/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import Sidebar from '../components/Sidebar';
@@ -24,6 +24,21 @@ const Clients: React.FC = () => {
     const [editPin, setEditPin] = useState('');
     const [showEditPinModal, setShowEditPinModal] = useState(false);
     const [pendingEdit, setPendingEdit] = useState(false);
+
+    const [addressClient, setAddressClient] = useState<any>(null);
+    const [addressList, setAddressList] = useState<any[]>([]);
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [addressLabel, setAddressLabel] = useState('');
+    const [addressText, setAddressText] = useState('');
+    const [addressSaving, setAddressSaving] = useState(false);
+    const [addressEditId, setAddressEditId] = useState<number | null>(null);
+    const [addressEditLabel, setAddressEditLabel] = useState('');
+    const [addressEditText, setAddressEditText] = useState('');
+    const [zones, setZones] = useState<any[]>([]);
+    const [newZoneName, setNewZoneName] = useState('');
+    const [addressZoneId, setAddressZoneId] = useState<number | null>(null);
+    const [editZoneId, setEditZoneId] = useState<number | null>(null);
+    const [showNewZoneInput, setShowNewZoneInput] = useState<'new' | 'edit' | null>(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -136,7 +151,7 @@ const Clients: React.FC = () => {
     };
 
     const handleOpenStatement = async (client: any) => {
-        try {
+            try {
             setShowStatementModal(true);
             setLoadingStatement(true);
             setStatementData(null);
@@ -148,6 +163,123 @@ const Clients: React.FC = () => {
             setShowStatementModal(false);
         } finally {
             setLoadingStatement(false);
+        }
+    };
+
+    const handleOpenAddresses = async (client: any) => {
+        setAddressClient(client);
+        setAddressLabel('');
+        setAddressText('');
+        setAddressEditId(null);
+        setAddressEditLabel('');
+        setAddressEditText('');
+        setAddressZoneId(null);
+        setEditZoneId(null);
+        setNewZoneName('');
+        setShowNewZoneInput(null);
+        try {
+            const res = await clientApi.getClientAddresses(client.id);
+            setAddressList(res.data);
+        } catch {
+            setAddressList([]);
+        }
+        try {
+            const res = await zoneApi.getAll();
+            setZones(res.data);
+        } catch {
+            setZones([]);
+        }
+        setShowAddressModal(true);
+        loadDeliveries();
+    };
+
+    const handleCreateZone = async (target: 'new' | 'edit') => {
+        if (!newZoneName.trim()) return;
+        try {
+            const res = await zoneApi.create({ name: newZoneName.trim() });
+            const zone = res.data.data;
+            setZones(prev => [...prev, zone]);
+            if (target === 'edit') setEditZoneId(zone.id);
+            else setAddressZoneId(zone.id);
+            setNewZoneName('');
+            setShowNewZoneInput(null);
+            toast.success(`Zona "${zone.name}" creada`);
+        } catch (err: any) {
+            const msg = err.response?.data?.message || 'Error al crear zona';
+            if (msg.toLowerCase().includes('ya existe')) {
+                const existing = zones.find(o => o.name.toLowerCase() === newZoneName.trim().toLowerCase());
+                if (existing) {
+                    if (target === 'edit') setEditZoneId(existing.id);
+                    else setAddressZoneId(existing.id);
+                    setNewZoneName('');
+                    setShowNewZoneInput(null);
+                    toast.success(`Zona asignada: ${existing.name}`);
+                    return;
+                }
+            }
+            toast.error(msg);
+        }
+    };
+
+    const handleAddAddress = async () => {
+        if (!addressClient || !addressText.trim()) { toast.error('Ingrese la dirección'); return; }
+        setAddressSaving(true);
+        try {
+            await clientApi.createClientAddress(addressClient.id, { label: addressLabel.trim() || undefined, address: addressText.trim(), zoneId: addressZoneId ?? null });
+            const res = await clientApi.getClientAddresses(addressClient.id);
+            setAddressList(res.data);
+            setAddressLabel('');
+            setAddressText('');
+            fetchClients();
+            toast.success('Dirección agregada');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error al agregar dirección');
+        } finally {
+            setAddressSaving(false);
+        }
+    };
+
+    const handleUpdateAddress = async (id: number) => {
+        if (!addressClient || !addressEditText.trim()) { toast.error('Ingrese la dirección'); return; }
+        setAddressSaving(true);
+        try {
+            await clientApi.updateClientAddress(addressClient.id, id, { label: addressEditLabel.trim() || undefined, address: addressEditText.trim(), zoneId: editZoneId ?? null });
+            const res = await clientApi.getClientAddresses(addressClient.id);
+            setAddressList(res.data);
+            setAddressEditId(null);
+            fetchClients();
+            toast.success('Dirección actualizada');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error al actualizar dirección');
+        } finally {
+            setAddressSaving(false);
+        }
+    };
+
+    const handleSetDefaultAddress = async (id: number) => {
+        if (!addressClient) return;
+        try {
+            await clientApi.setDefaultAddress(addressClient.id, id);
+            const res = await clientApi.getClientAddresses(addressClient.id);
+            setAddressList(res.data);
+            fetchClients();
+            toast.success('Dirección marcada como principal');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error');
+        }
+    };
+
+    const handleDeleteAddress = async (id: number) => {
+        if (!addressClient) return;
+        if (!window.confirm('¿Eliminar esta dirección?')) return;
+        try {
+            await clientApi.deleteClientAddress(addressClient.id, id);
+            const res = await clientApi.getClientAddresses(addressClient.id);
+            setAddressList(res.data);
+            fetchClients();
+            toast.success('Dirección eliminada');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error al eliminar dirección');
         }
     };
 
@@ -312,10 +444,20 @@ const Clients: React.FC = () => {
                                         </div>
                                     </td>
                                     <td style={{ maxWidth: '250px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
-                                            <MapPin size={14} style={{ flexShrink: 0, color: '#64748b' }} />
-                                            <span className="text-sm truncate-2" style={{ lineHeight: '1.2' }}>{client.address || 'Sin dirección registrada'}</span>
-                                        </div>
+                                        {(() => {
+                                            const addrs = client.addresses || [];
+                                            const def = addrs.find((a: any) => a.isDefault) || addrs[0] || null;
+                                            const shown = def?.address || client.address || '';
+                                            return (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8' }}>
+                                                    <MapPin size={14} style={{ flexShrink: 0, color: '#64748b' }} />
+                                                    <span className="text-sm truncate-2" style={{ lineHeight: '1.2' }}>{shown || 'Sin dirección registrada'}</span>
+                                                    {addrs.length > 1 && (
+                                                        <span style={{ flexShrink: 0, fontSize: '0.65rem', fontWeight: 800, color: '#3b82f6', background: 'rgba(59,130,246,0.12)', padding: '2px 6px', borderRadius: '6px' }}>+{addrs.length - 1}</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })()}
                                     </td>
                                     {isAdmin && <td style={{ color: '#94a3b8', fontSize: '0.8rem' }}>{client.createdBy?.name || '---'}</td>}
                                     <td>
@@ -330,6 +472,9 @@ const Clients: React.FC = () => {
                                             </button>
                                             <button className="btn-icon-table edit" onClick={() => handleOpenEdit(client)} title="Editar Cliente">
                                                 <Edit3 size={18} />
+                                            </button>
+                                                                                        <button className="btn-icon-table edit" onClick={() => handleOpenAddresses(client)} title="Gestionar Direcciones" style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                                                <MapPin size={18} />
                                             </button>
                                             <button className="btn-icon-table delete" onClick={() => { setDeleteTarget(client); setDeletePin(''); }} title="Eliminar Cliente" style={{ color: '#ef4444' }}>
                                                 <Trash2 size={18} />
@@ -387,6 +532,29 @@ const Clients: React.FC = () => {
                                                     placeholder="Ej: 0000-000000-000-0" 
                                                     onFocus={() => { setActiveField('documentId'); setActiveKeyboard('numeric'); }}
                                                     inputMode="none"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="field" style={{ marginTop: '1.25rem' }}>
+                                            <label>Dirección Física / Entrega</label>
+                                            <div className="input-with-icon">
+                                                <MapPin size={16} />
+                                                <textarea 
+                                                    value={formData.address} 
+                                                    onChange={e => setFormData({ ...formData, address: e.target.value })} 
+                                                    placeholder="Ciudad, Calle, Local..." 
+                                                    onFocus={() => { setActiveField('address'); setActiveKeyboard('qwerty'); }}
+                                                    inputMode="none"
+                                                    style={{ 
+                                                        width: '100%', 
+                                                        padding: '0.75rem 1rem 0.75rem 2.8rem', 
+                                                        borderRadius: '12px', 
+                                                        background: '#0f172a', 
+                                                        border: '1px solid #334155', 
+                                                        color: 'white',
+                                                        minHeight: '60px',
+                                                        resize: 'none'
+                                                    }}
                                                 />
                                             </div>
                                         </div>
@@ -452,29 +620,6 @@ const Clients: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="field">
-                                            <label>Dirección Física / Entrega</label>
-                                            <div className="input-with-icon">
-                                                <MapPin size={16} />
-                                                <textarea 
-                                                    value={formData.address} 
-                                                    onChange={e => setFormData({ ...formData, address: e.target.value })} 
-                                                    placeholder="Ciudad, Calle, Local..." 
-                                                    onFocus={() => { setActiveField('address'); setActiveKeyboard('qwerty'); }}
-                                                    inputMode="none"
-                                                    style={{ 
-                                                        width: '100%', 
-                                                        padding: '0.75rem 1rem 0.75rem 2.8rem', 
-                                                        borderRadius: '12px', 
-                                                        background: '#0f172a', 
-                                                        border: '1px solid #334155', 
-                                                        color: 'white',
-                                                        minHeight: '100px',
-                                                        resize: 'none'
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
                                         <div className="field" style={{ marginTop: '1rem' }}>
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Truck size={14} /> Delivery Asignado</label>
                                             <select value={formData.deliveryId || ''} onChange={e => setFormData({ ...formData, deliveryId: e.target.value ? Number(e.target.value) : null })}
@@ -494,6 +639,129 @@ const Clients: React.FC = () => {
                                     </button>
                                 </footer>
                             </form>
+                        </div>
+                    </div>
+                )}
+
+                {showAddressModal && addressClient && (
+                    <div className="modal-overlay" style={{ zIndex: 4000 }} onClick={() => setShowAddressModal(false)}>
+                        <div onClick={e => e.stopPropagation()} className="payment-modal history-modal animate-in zoom-in-95" style={{ maxWidth: '560px', width: '90%', background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', padding: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b', padding: '8px', borderRadius: '10px' }}>
+                                        <MapPin size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '1.2rem', color: 'white' }}>Direcciones</h3>
+                                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{addressClient.name}</span>
+                                    </div>
+                                </div>
+                                <button type="button" onClick={() => setShowAddressModal(false)} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '50vh', overflowY: 'auto', marginBottom: '1.25rem' }}>
+                                {addressList.length === 0 && (
+                                    <div style={{ color: '#64748b', fontSize: '0.85rem', fontStyle: 'italic', textAlign: 'center', padding: '1rem 0' }}>Sin direcciones registradas.</div>
+                                )}
+                                {addressList.map((a: any) => (
+                                    <div key={a.id} style={{ background: 'rgba(30, 41, 59, 0.4)', border: '1px solid #334155', borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        {addressEditId === a.id ? (
+                                            <>
+                                                <input
+                                                    value={addressEditLabel} onChange={e => setAddressEditLabel(e.target.value)} placeholder="Etiqueta (ej: Casa, Local)"
+                                                    onFocus={() => { setActiveField('addressEditLabel'); setActiveKeyboard('qwerty'); }}
+                                                    inputMode="none"
+                                                    style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}
+                                                />
+                                                <textarea
+                                                    value={addressEditText} onChange={e => setAddressEditText(e.target.value)} placeholder="Dirección completa"
+                                                    onFocus={() => { setActiveField('addressEditText'); setActiveKeyboard('qwerty'); }}
+                                                    inputMode="none"
+                                                    style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none', resize: 'none', minHeight: '50px' }}
+                                                />
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <select value={editZoneId ?? ''} onChange={e => { setEditZoneId(e.target.value ? Number(e.target.value) : null); setShowNewZoneInput(null); }} style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}>
+                                                        <option value="">Zona: Sin zona</option>
+                                                        {zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                                    </select>
+                                                    <button onClick={() => setShowNewZoneInput(showNewZoneInput === 'edit' ? null : 'edit')} title="Crear zona" style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '10px', padding: '0.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={16} /></button>
+                                                </div>
+                                                {showNewZoneInput === 'edit' && (
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <input value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="Nombre de la zona"
+                                                            onFocus={() => { setActiveField('newZoneName'); setActiveKeyboard('qwerty'); }}
+                                                            inputMode="none"
+                                                            style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }} />
+                                                        <button onClick={() => handleCreateZone('edit')} style={{ background: '#818cf8', border: 'none', color: '#0f172a', borderRadius: '10px', padding: '0.5rem 0.85rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Crear</button>
+                                                    </div>
+                                                )}
+                                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => setAddressEditId(null)} style={{ background: '#1e293b', border: '1px solid #334155', color: '#94a3b8', borderRadius: '8px', padding: '0.35rem 0.75rem', fontSize: '0.75rem', cursor: 'pointer' }}>Cancelar</button>
+                                                    <button onClick={() => handleUpdateAddress(a.id)} disabled={addressSaving} style={{ background: '#f59e0b', border: 'none', color: '#0f172a', borderRadius: '8px', padding: '0.35rem 0.75rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Guardar</button>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                                                        {a.isDefault ? (
+                                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#f59e0b', background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>PRINCIPAL</span>
+                                                        ) : (
+                                                            <button onClick={() => handleSetDefaultAddress(a.id)} title="Marcar como principal" style={{ fontSize: '0.6rem', fontWeight: 800, color: '#64748b', background: 'rgba(100,116,139,0.12)', border: 'none', padding: '2px 6px', borderRadius: '6px', cursor: 'pointer', flexShrink: 0 }}>Predeterminar</button>
+                                                        )}
+                                                        {a.label && <strong style={{ color: '#e2e8f0', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>{a.label}</strong>}
+                                                        {a.zone && (
+                                                            <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#818cf8', background: 'rgba(99,102,241,0.12)', padding: '2px 6px', borderRadius: '6px', flexShrink: 0 }}>{a.zone.name}</span>
+                                                        )}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.35rem', flexShrink: 0 }}>
+                                                        <button onClick={() => { setAddressEditId(a.id); setAddressEditLabel(a.label || ''); setAddressEditText(a.address || ''); setEditZoneId(a.zoneId ?? null); setShowNewZoneInput(null); }} title="Editar" style={{ background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.2)', borderRadius: '8px', padding: '0.3rem', cursor: 'pointer', display: 'flex' }}><Edit3 size={14} /></button>
+                                                        <button onClick={() => handleDeleteAddress(a.id)} title="Eliminar" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '0.3rem', cursor: 'pointer', display: 'flex' }}><Trash2 size={14} /></button>
+                                                    </div>
+                                                </div>
+                                                <span style={{ color: '#cbd5e1', fontSize: '0.8rem', wordBreak: 'break-word' }}>{a.address}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
+                                <label style={{ fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Nueva dirección</label>
+                                <input
+                                    value={addressLabel} onChange={e => setAddressLabel(e.target.value)} placeholder="Etiqueta (opcional, ej: Casa)"
+                                    onFocus={() => { setActiveField('addressLabel'); setActiveKeyboard('qwerty'); }}
+                                    inputMode="none"
+                                    style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}
+                                />
+                                <textarea
+                                    value={addressText} onChange={e => setAddressText(e.target.value)} placeholder="Dirección completa"
+                                    onFocus={() => { setActiveField('addressText'); setActiveKeyboard('qwerty'); }}
+                                    inputMode="none"
+                                    style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none', resize: 'none', minHeight: '60px' }}
+                                />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <select value={addressZoneId ?? ''} onChange={e => { setAddressZoneId(e.target.value ? Number(e.target.value) : null); setShowNewZoneInput(null); }} style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }}>
+                                        <option value="">Zona: Sin zona</option>
+                                        {zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                    </select>
+                                    <button onClick={() => setShowNewZoneInput(showNewZoneInput === 'new' ? null : 'new')} title="Crear zona" style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '10px', padding: '0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Plus size={16} /></button>
+                                </div>
+                                {showNewZoneInput === 'new' && (
+                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                        <input value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="Nombre de la zona"
+                                            onFocus={() => { setActiveField('newZoneName'); setActiveKeyboard('qwerty'); }}
+                                            inputMode="none"
+                                            style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem 0.85rem', color: 'white', fontSize: '0.85rem', outline: 'none' }} />
+                                        <button onClick={() => handleCreateZone('new')} style={{ background: '#818cf8', border: 'none', color: '#0f172a', borderRadius: '10px', padding: '0.6rem 0.85rem', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer' }}>Crear</button>
+                                    </div>
+                                )}
+                                <button onClick={handleAddAddress} disabled={addressSaving} style={{ background: '#f59e0b', border: 'none', color: '#0f172a', borderRadius: '10px', padding: '0.65rem 1rem', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                    <Plus size={16} /> Agregar dirección
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -650,9 +918,14 @@ const Clients: React.FC = () => {
                 <AnimatePresence>
                     {activeKeyboard === 'qwerty' && (
                         <VirtualKeyboard 
-                            value={activeField === 'search' ? search : (formData as any)[activeField || '']}
+                            value={activeField === 'search' ? search : activeField === 'newZoneName' ? newZoneName : activeField === 'addressLabel' ? addressLabel : activeField === 'addressText' ? addressText : activeField === 'addressEditLabel' ? addressEditLabel : activeField === 'addressEditText' ? addressEditText : (formData as any)[activeField || '']}
                             onChange={(val) => {
                                 if (activeField === 'search') setSearch(val);
+                                else if (activeField === 'newZoneName') setNewZoneName(val);
+                                else if (activeField === 'addressLabel') setAddressLabel(val);
+                                else if (activeField === 'addressText') setAddressText(val);
+                                else if (activeField === 'addressEditLabel') setAddressEditLabel(val);
+                                else if (activeField === 'addressEditText') setAddressEditText(val);
                                 else setFormData({ ...formData, [activeField!]: val });
                             }}
                             onClose={() => setActiveKeyboard(null)}

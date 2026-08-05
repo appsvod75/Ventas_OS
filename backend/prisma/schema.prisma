@@ -224,7 +224,32 @@ model Client {
   createdBy      User?           @relation(fields: [createdById], references: [id])
   clientPayments ClientPayment[]
   sales          SaleH[]
+  addresses      ClientAddress[]
   delivery       Delivery?       @relation(fields: [deliveryId], references: [id])
+}
+
+model ClientAddress {
+  id        Int      @id @default(autoincrement())
+  clientId  Int
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  label     String?
+  address   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  sales     SaleH[]
+  zoneId    Int?
+  zone      DeliveryZone? @relation(fields: [zoneId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([zoneId])
+}
+
+model DeliveryZone {
+  id        Int             @id @default(autoincrement())
+  name      String
+  createdAt DateTime        @default(now())
+  addresses ClientAddress[]
 }
 
 model SaleH {
@@ -255,6 +280,8 @@ model SaleH {
   user                User                 @relation("UserSales", fields: [userId], references: [id])
     branch              Branch               @relation(fields: [branchId], references: [id])
     client              Client?              @relation(fields: [clientId], references: [id])
+    clientAddressId     Int?
+    clientAddress       ClientAddress?       @relation(fields: [clientAddressId], references: [id])
     reversedBy          User?                @relation("ReversedSales", fields: [reversedById], references: [id])
 }
 

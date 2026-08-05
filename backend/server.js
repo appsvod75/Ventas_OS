@@ -49,6 +49,7 @@ app.use('/api/closings', require('./routes/closing.routes.js'));
 app.use('/api/openings', require('./routes/opening.routes.js'));
 app.use('/api/deliveries', require('./routes/delivery.routes.js'));
 app.use('/api/projections', require('./routes/projection.routes.js'));
+app.use('/api/zones', require('./routes/zone.routes.js'));
 
 // Dynamic PWA Manifest
 app.get('/api/manifest', async (req, res) => {
