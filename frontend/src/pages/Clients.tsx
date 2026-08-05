@@ -317,7 +317,7 @@ const Clients: React.FC = () => {
                             style={{ 
                                 position: 'relative', 
                                 width: '100%',
-                                maxWidth: '350px',
+                                maxWidth: '290px',
                                 flexShrink: 0,
                                 margin: 0,
                                 padding: 0
@@ -378,13 +378,13 @@ const Clients: React.FC = () => {
                                 {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                             </select>
                         )}
-                        <button className="btn-add" onClick={handleOpenCreate} style={{ height: '48px', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
-                            <UserPlus size={20} />
-                            <span>Nuevo Cliente</span>
-                        </button>
                         <button onClick={() => setShowInactive(!showInactive)} style={{ height: '48px', maxHeight: '48px', background: showInactive ? 'rgba(239,68,68,0.15)' : '#1e293b', border: `1px solid ${showInactive ? 'rgba(239,68,68,0.4)' : '#334155'}`, borderRadius: '12px', padding: '0 1rem', color: showInactive ? '#ef4444' : '#94a3b8', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <User size={16} />
                             {showInactive ? 'Mostrar solo activos' : 'Ver inactivos'}
+                        </button>
+                        <button className="btn-add" onClick={handleOpenCreate} style={{ height: '48px', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
+                            <UserPlus size={20} />
+                            <span>Nuevo Cliente</span>
                         </button>
                     </div>
                 </header>
@@ -955,7 +955,7 @@ const Clients: React.FC = () => {
             <style>{`
                 .header-tools { 
                     display: flex; 
-                    gap: 1rem; 
+                    gap: 0.6rem; 
                     align-items: center; 
                     overflow-x: auto;
                     padding: 4px 0;
