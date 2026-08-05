@@ -179,7 +179,7 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 
 > Requerimiento del dueño antes de salir a producción.
 
-- [ ] **Limpieza de datos**: dejar solo "vivos" **catálogo de productos, clientes y usuarios**. Limpiar el área de ventas, cierres, créditos y demás datos de prueba.
+- [ ] **Limpieza de datos**: dejar solo "vivos" **catálogo de productos, clientes y usuarios**. Mecanismo listo: **Settings → Zona de Peligro → "Puesta a Cero"** borra ventas, abonos, créditos, compras, gastos, cortes, lotes, transferencias y pone stock/folio a cero (conserva clientes, direcciones, zonas, catálogo, usuarios y config). Ejecutar en VPS antes de producción.
 - [x] **Nueva tabla de direcciones**: implementada la tabla `ClientAddress` (un cliente puede tener **varias direcciones**). Ver "Última sesión (05 Ago 2026)". En VPS: `npx prisma generate && npx prisma db push` + correr `node scripts/backfill_client_addresses.js` una vez.
 
 ## Última sesión (05 Ago 2026) — Multidirección de clientes
@@ -205,10 +205,23 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 | **Zona en checkout** | El selector de dirección de `CheckoutModal` muestra la zona en cada opción (`(Zona)`) |
 | **Zona en label** | Campo imprimible **`zone`** opcional en `Settings.tsx` (`allFieldDefs`) y `LabelModal.tsx` (muestra `clientAddress.zone.name`). Se activa en Settings → Label. `getShipments` incluye `clientAddress.zone` |
 
+### ✅ Fixes y mejoras de UI + Zona de Peligro (tarde del mismo día)
+| Feature | Descripción |
+|---------|-------------|
+| **Selector siempre visible** | En checkout aparece la "Dirección de entrega" con cualquier cliente que tenga ≥1 dirección (antes solo con envío o varias). Reducido el espacio vertical bajo el nombre |
+| **Agregar dirección/zona en cobro** | Botón "+ Nueva" junto al selector: crea dirección con zona (o zona nueva al vuelo) sin salir del checkout |
+| **Fix 500 al crear zona** | `zone.controller.js`: `mode:'insensitive'` no soportado en SQLite → validación de duplicados en JS |
+| **Fix lupa en search** | La lupa del buscador de cliente se montaba sobre el placeholder por la clase global `.search-icon` de POS → classname propio `co-search-icon` |
+| **Clientes inactivos** | Manager de clientes: botón toggle "Ver inactivos" en el header (por defecto se ocultan). En el checkout NO se muestran inactivos en la búsqueda |
+| **Header unificado** | Search, select de vendedor, botones = 48px de alto; select +5px; orden SEARCH → VENDEDOR → VER INACTIVOS → NUEVO CLIENTE; reduce espacio para que no se corte el último |
+| **Proveedores** | Header y botones de acción de la tabla alineados con el resto de CRUDs (`btn-icon-table`), botón en una línea |
+| **Zona de Peligro "Puesta a Cero"** | Botón renombrado y ampliado en `danger.controller.js`: ahora también borra `purchaseH/purchaseD`, `transfer/transferDetail`. Tip y modal describen lo que borra **y las excepciones** (clientes, direcciones, zonas, catálogo, usuarios, config) |
+
 ### Notas de despliegue
-- Backend: `schema.prisma`, `client.controller.js`, `client.routes.js`, `sale.controller.js`, `zone.controller.js` (nuevo), `zone.routes.js` (nuevo), `server.js`, `scripts/backfill_client_addresses.js`. Luego `npx prisma generate && npx prisma db push` (crea `DeliveryZone` + columna `zoneId`) y `node scripts/backfill_client_addresses.js` (una vez).
-- Frontend: subir `dist/` íntegro (cambios en `CheckoutModal`, `POS`, `Clients`, `LabelModal`, `Shipments`, `Settings`).
+- Backend: `schema.prisma`, `client.controller.js`, `client.routes.js`, `sale.controller.js`, `zone.controller.js`, `zone.routes.js`, `server.js`, `danger.controller.js`, `scripts/backfill_client_addresses.js`. Luego `npx prisma generate && npx prisma db push` (crea `DeliveryZone` + columna `zoneId`) y `node scripts/backfill_client_addresses.js` (una vez).
+- Frontend: subir `dist/` íntegro (cambios en `CheckoutModal`, `POS`, `Clients`, `LabelModal`, `Shipments`, `Settings`, `Suppliers`).
 - `Client.address` se mantiene (legacy) y se sincroniza con la dirección default al crear/editar cliente.
+- Recarga forzada **Ctrl+Shift+R** tras subir `dist/` (PWA cachea con service worker).
 
 ## Última sesión (29 Jul 2026) — Resumen de cambios
 
