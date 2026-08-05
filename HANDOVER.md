@@ -1,5 +1,10 @@
 # LuckyPOS - Handover
 
+> ## ⚠️ IMPORTANTE PARA EL PRÓXIMO AGENTE
+> El avance de la **auditoría** del sistema se sigue en **`AUDITORIA.md`** (raíz del repo).
+> Ahí están listados todos los hallazgos (Punto 1 crítico ya resuelto, puntos 2–8 pendientes, mejoras, anexo del 05/08) y cada uno se marca con `[x]` cuando queda **corregido y verificado**. La regla de trabajo es **un punto a la vez**: revisar → explicar → proponer → esperar aprobación → corregir → verificar → indicar archivos a subir → marcar resuelto.
+> **Antes de tocar código, leer `AUDITORIA.md` y ver qué hay marcado/pendiente.** Mantener `AUDITORIA.md`, `HANDOVER.md` y `WALKTHROUGH.md` sincronizados cuando algo cambie de estado.
+
 ## Descripción General
 Sistema de Punto de Venta (POS) moderno con soporte multi-sucursal, inventario avanzado, cuentas por cobrar/pagar, cierres de caja automatizados, envíos con estados, label de envío imprimible, y PWA para uso en tablets/móviles. Base de datos SQLite única (`misventas.db`).
 
@@ -169,6 +174,13 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 
 ### ⏳ Pendiente (anexado a AUDITORIA.md)
 - **Desglose auditable del detalle**: anulaciones se contabilizan como gastos pero no se distingue su origen. En el modal "Ver Detalles" falta el total de ventas que suman las formas de pago, y se quiere una acción junto al cuadre que abra un modal con el desglose de cada valor (p. ej. Gastos del período → detalle de cada gasto/anulación).
+
+## 🔜 Pendiente pre-producción (06 Ago 2026) — Limpieza de datos + direcciones de cliente
+
+> Requerimiento del dueño antes de salir a producción.
+
+- [ ] **Limpieza de datos**: dejar solo "vivos" **catálogo de productos, clientes y usuarios**. Limpiar el área de ventas, cierres, créditos y demás datos de prueba.
+- [ ] **Nueva tabla de direcciones**: un mismo cliente puede tener **varias direcciones**. Crear tabla nueva (p. ej. `ClientAddress`) y modelar la relación con `Client` (uno-a-muchos). Elegir cuál dirección se usa en venta/label de envío.
 
 ## Última sesión (29 Jul 2026) — Resumen de cambios
 
