@@ -135,7 +135,9 @@ const Suppliers: React.FC = () => {
                                 inputMode="none"
                                 style={{ 
                                     width: '100%', 
-                                    padding: '0.875rem 60px 0.875rem 3rem',
+                                    height: '48px',
+                                    boxSizing: 'border-box',
+                                    padding: '0 60px 0 3rem',
                                     background: '#1e293b',
                                     border: '1px solid #334155',
                                     borderRadius: '12px',
@@ -168,7 +170,7 @@ const Suppliers: React.FC = () => {
                                 </button>
                             )}
                         </div>
-                        <button className="btn-add" onClick={handleOpenCreate}>
+                        <button className="btn-add" onClick={handleOpenCreate} style={{ height: '48px', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
                             <Building2 size={20} />
                             <span>Nuevo Proveedor</span>
                         </button>
@@ -247,12 +249,12 @@ const Suppliers: React.FC = () => {
                                         )}
                                     </td>
                                     <td style={{ textAlign: 'right' }}>
-                                        <div className="action-buttons">
-                                            <button className="btn-icon" onClick={() => handleOpenEdit(p)} title="Editar">
-                                                <Edit3 size={16} />
+                                        <div className="t-actions" style={{ justifyContent: 'flex-end', gap: '8px' }}>
+                                            <button className="btn-icon-table edit" onClick={() => handleOpenEdit(p)} title="Editar Proveedor">
+                                                <Edit3 size={18} />
                                             </button>
-                                            <button className="btn-icon danger" onClick={() => handleDelete(p.id)} title="Desactivar">
-                                                <Trash2 size={16} />
+                                            <button className="btn-icon-table delete" onClick={() => handleDelete(p.id)} title="Desactivar Proveedor" style={{ color: '#ef4444' }}>
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </td>
