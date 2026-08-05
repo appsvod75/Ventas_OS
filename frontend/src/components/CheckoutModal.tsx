@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Search, MapPin, Calendar, CreditCard, Banknote, UserPlus, X, ShoppingCart, Plus, CheckCircle2, ChevronRight, Save, Building2, Delete, User, Phone, Mail, Truck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { clientApi, adminAuthApi } from '../services/api';
+import { clientApi, adminAuthApi, zoneApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import VirtualKeyboard from './VirtualKeyboard';
@@ -44,6 +44,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
     const [newDeliveryName, setNewDeliveryName] = useState('');
     const [deliveryFiltered, setDeliveryFiltered] = useState<any[]>([]);
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(null);
+    const [showAddrAdd, setShowAddrAdd] = useState(false);
+    const [addrLabel, setAddrLabel] = useState('');
+    const [addrText, setAddrText] = useState('');
+    const [addrZoneId, setAddrZoneId] = useState<number | null>(null);
+    const [zones, setZones] = useState<any[]>([]);
+    const [newZoneName, setNewZoneName] = useState('');
+    const [showNewZone, setShowNewZone] = useState(false);
+    const [savingAddr, setSavingAddr] = useState(false);
 
     const isTablet = true; // FORZADO PARA PC (Videos): window.matchMedia('(min-width: 901px) and (max-width: 1300px)').matches;
 
@@ -71,6 +79,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                 ]);
                 setClients(clientsRes.data);
                 setDeliveries(deliveriesRes.data || []);
+                try {
+                    const zonesRes = await zoneApi.getAll();
+                    setZones(zonesRes.data);
+                } catch {}
                 if (isAdmin && usersRes.data?.length) {
                     setSellers(usersRes.data);
                     setSelectedSellerId(usersRes.data.find((u: any) => u.id === user.id)?.id || user.id);
@@ -125,6 +137,47 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
             toast.success("Cliente creado con éxito");
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Error al crear cliente");
+        }
+    };
+
+    const handleCreateZone = async () => {
+        if (!newZoneName.trim()) return;
+        try {
+            const res = await zoneApi.create({ name: newZoneName.trim() });
+            setZones(prev => [...prev, res.data.data]);
+            setAddrZoneId(res.data.data.id);
+            setNewZoneName('');
+            setShowNewZone(false);
+        } catch (err: any) {
+            const msg = err.response?.data?.message || 'Error';
+            if (msg.toLowerCase().includes('ya existe')) {
+                const ex = zones.find(z => z.name.toLowerCase() === newZoneName.trim().toLowerCase());
+                if (ex) { setAddrZoneId(ex.id); setNewZoneName(''); setShowNewZone(false); return; }
+            }
+            toast.error(msg);
+        }
+    };
+
+    const handleAddAddress = async () => {
+        if (!selectedClient) return;
+        if (!addrText.trim()) { toast.error('Ingrese la dirección'); return; }
+        setSavingAddr(true);
+        try {
+            const res = await clientApi.createClientAddress(selectedClient.id, { label: addrLabel.trim() || undefined, address: addrText.trim(), zoneId: addrZoneId ?? null });
+            const updated = await clientApi.getClients();
+            setClients(updated.data);
+            const c = updated.data.find((x: any) => x.id === selectedClient.id) || selectedClient;
+            setSelectedClient(c);
+            setSelectedAddressId(res.data.data.id);
+            setShowAddrAdd(false);
+            setAddrLabel('');
+            setAddrText('');
+            setAddrZoneId(null);
+            toast.success('Dirección agregada');
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || 'Error al agregar dirección');
+        } finally {
+            setSavingAddr(false);
         }
     };
 
@@ -315,7 +368,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                     </div>
                                     <button onClick={() => { setSelectedClient(null); setSelectedAddressId(null); }} className="btn-remove-client"><X size={16} /></button>
                                     {(shipping > 0 || (selectedClient.addresses || []).length > 0) && (
-                                        <div style={{ marginTop: '0.75rem', width: '100%' }}>
+                                        <div style={{ marginTop: '0.75rem', width: '100%', flexBasis: '100%' }}>
                                             {(() => {
                                                 const addresses = selectedClient.addresses || [];
                                                 if (addresses.length === 0) {
@@ -323,9 +376,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                                 }
                                                 return (
                                                     <>
-                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
-                                                            <MapPin size={13} /> Dirección de entrega
-                                                        </label>
+                                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
+                                                                <MapPin size={13} /> Dirección de entrega
+                                                            </label>
+                                                            <button onClick={() => setShowAddrAdd(!showAddrAdd)} style={{ fontSize: '0.65rem', fontWeight: 800, color: '#818cf8', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '8px', padding: '0.25rem 0.6rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                <Plus size={12} /> {showAddrAdd ? 'Cerrar' : 'Nueva'}
+                                                            </button>
+                                                        </div>
                                                         <select
                                                             value={selectedAddressId ?? ''}
                                                             onChange={e => setSelectedAddressId(e.target.value ? Number(e.target.value) : null)}
@@ -337,6 +395,28 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                                                 </option>
                                                             ))}
                                                         </select>
+                                                        {showAddrAdd && (
+                                                            <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.45rem', background: 'rgba(15,23,42,0.6)', border: '1px solid #334155', borderRadius: '10px', padding: '0.6rem' }}>
+                                                                <input value={addrLabel} onChange={e => setAddrLabel(e.target.value)} placeholder="Etiqueta (opcional, ej: Casa)" style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }} />
+                                                                <textarea value={addrText} onChange={e => setAddrText(e.target.value)} placeholder="Dirección completa" style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none', resize: 'none', minHeight: '50px' }} />
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                                    <select value={addrZoneId ?? ''} onChange={e => { setAddrZoneId(e.target.value ? Number(e.target.value) : null); setShowNewZone(false); }} style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }}>
+                                                                        <option value="">Zona: Sin zona</option>
+                                                                        {zones.map((z: any) => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                                                    </select>
+                                                                    <button onClick={() => setShowNewZone(!showNewZone)} title="Crear zona" style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', display: 'flex' }}><Plus size={14} /></button>
+                                                                </div>
+                                                                {showNewZone && (
+                                                                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                                                        <input value={newZoneName} onChange={e => setNewZoneName(e.target.value)} placeholder="Nombre de la zona" style={{ flex: 1, background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', outline: 'none' }} />
+                                                                        <button onClick={handleCreateZone} style={{ background: '#818cf8', border: 'none', color: '#0f172a', borderRadius: '8px', padding: '0.5rem 0.85rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Crear</button>
+                                                                    </div>
+                                                                )}
+                                                                <button onClick={handleAddAddress} disabled={savingAddr} style={{ background: '#f59e0b', border: 'none', color: '#0f172a', borderRadius: '8px', padding: '0.55rem 0.85rem', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                                                                    <Plus size={14} /> Agregar dirección
+                                                                </button>
+                                                            </div>
+                                                        )}
                                                     </>
                                                 );
                                             })()}
@@ -627,7 +707,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                 .search-input-wrapper input { flex: 1; padding: 0; height: 100%; border: none; background: transparent; font-weight: 700; outline: none; color: white; font-size: 0.85rem; }
                 .search-icon { color: #64748b; margin-right: 8px; }
                 
-                .selected-client-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+                .selected-client-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); padding: 10px; border-radius: 12px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
                 .client-avatar { width: 32px; height: 32px; background: rgba(59,130,246,0.2); color: #60a5fa; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
                 .client-name { font-weight: 800; color: white; font-size: 0.85rem; }
                 .client-meta { font-size: 0.65rem; color: #94a3b8; font-weight: 700; }
