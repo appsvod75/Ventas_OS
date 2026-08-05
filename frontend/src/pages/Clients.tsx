@@ -336,7 +336,9 @@ const Clients: React.FC = () => {
                                 inputMode="none"
                                 style={{ 
                                     width: '100%', 
-                                    padding: '0.875rem 60px 0.875rem 3rem',
+                                    height: '48px',
+                                    padding: '0 60px 0 3rem',
+                                    boxSizing: 'border-box',
                                     background: '#1e293b',
                                     border: '1px solid #334155',
                                     borderRadius: '12px',
@@ -371,16 +373,16 @@ const Clients: React.FC = () => {
                         </div>
                         {isAdmin && users.length > 0 && (
                             <select value={sellerFilter} onChange={e => setSellerFilter(e.target.value)}
-                                style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '0.5rem 0.75rem', color: 'white', fontSize: '0.8rem', fontWeight: 700, outline: 'none', minWidth: '130px' }}>
+                                style={{ height: '48px', padding: '0 0.75rem', background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', color: 'white', fontSize: '0.8rem', fontWeight: 700, outline: 'none', minWidth: '135px' }}>
                                 <option value="">Vendedor: Todos</option>
                                 {users.map((u: any) => <option key={u.id} value={u.id}>{u.name}</option>)}
                             </select>
                         )}
-                        <button className="btn-add" onClick={handleOpenCreate}>
+                        <button className="btn-add" onClick={handleOpenCreate} style={{ height: '48px', whiteSpace: 'nowrap', boxSizing: 'border-box' }}>
                             <UserPlus size={20} />
                             <span>Nuevo Cliente</span>
                         </button>
-                        <button onClick={() => setShowInactive(!showInactive)} style={{ maxHeight: '100%', minHeight: '48px', background: showInactive ? 'rgba(239,68,68,0.15)' : '#1e293b', border: `1px solid ${showInactive ? 'rgba(239,68,68,0.4)' : '#334155'}`, borderRadius: '12px', padding: '0 1rem', color: showInactive ? '#ef4444' : '#94a3b8', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <button onClick={() => setShowInactive(!showInactive)} style={{ height: '48px', maxHeight: '48px', background: showInactive ? 'rgba(239,68,68,0.15)' : '#1e293b', border: `1px solid ${showInactive ? 'rgba(239,68,68,0.4)' : '#334155'}`, borderRadius: '12px', padding: '0 1rem', color: showInactive ? '#ef4444' : '#94a3b8', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <User size={16} />
                             {showInactive ? 'Mostrar solo activos' : 'Ver inactivos'}
                         </button>
