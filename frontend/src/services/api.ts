@@ -104,6 +104,7 @@ export const deliveryApi = {
 export const openingApi = {
     checkOpening: (branchId?: number) => api.get('/openings/check', { params: { branchId } }),
     createOpening: (data: { amount: number; branchId?: number; date?: string }) => api.post('/openings', data),
+    updateOpening: (id: number, data: { amount?: number; date?: string; branchId?: number }) => api.put(`/openings/${id}`, data),
     getLastOpening: (branchId?: number) => api.get('/openings/last', { params: { branchId } })
 };
 
@@ -125,7 +126,8 @@ export const auditApi = {
 export const statsApi = {
     getDashboardStats: (branchId?: number) => api.get('/stats/dashboard', { params: { branchId } }),
     getReports: (params: { startDate: string; endDate: string; branchId?: number }) => api.get('/stats/reports', { params }),
-    getSalesBySeller: (startDate: string, endDate: string, sellerId?: number) => api.get('/stats/sales-by-seller', { params: { startDate, endDate, sellerId } })
+    getSalesBySeller: (startDate: string, endDate: string, sellerId?: number) => api.get('/stats/sales-by-seller', { params: { startDate, endDate, sellerId } }),
+    getDeliveryDetail: (params: { startDate: string; endDate: string; branchId?: number; deliveryId?: number }) => api.get('/stats/delivery-detail', { params })
 };
 
 export const expenseApi = {
@@ -135,7 +137,8 @@ export const expenseApi = {
 
 export const closingApi = {
     getClosings: (branchId?: number) => api.get('/closings', { params: { branchId } }),
-    getClosingReport: (branchId: number, date: string) => api.get('/closings/report', { params: { branchId, date } })
+    getClosingReport: (branchId: number, date: string) => api.get('/closings/report', { params: { branchId, date } }),
+    getClosingDetails: (date: string, branchId: number) => api.get('/closings/details', { params: { date, branchId } })
 };
 
 export const projectionApi = {

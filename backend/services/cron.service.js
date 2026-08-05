@@ -1,114 +1,127 @@
 const cron = require('node-cron');
 const prisma = require('../db');
 const { getIO } = require('./socketManager');
-const { startOfDay, endOfDay, subDays } = require('date-fns');
+const { addDays } = require('date-fns');
+const { toSVDate } = require('../utils/tz');
 
-// Store the currently active task so we can cancel and restart it if the time changes
-let activeTask = null;
+let activeClosingTask = null;
+let activeOpeningTask = null;
 
 const runClosingForDate = async (targetDate) => {
     try {
-        // Obtenemos la fecha en formato YYYY-MM-DD según el timezone de El Salvador
         const dateStr = targetDate.toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
         console.log(`Iniciando cierre de caja para el día local: ${dateStr}`);
-        
-        const start = new Date(`${dateStr}T00:00:00-06:00`);
+
+        const start = toSVDate(dateStr);
         const end = new Date(`${dateStr}T23:59:59-06:00`);
+        const dayOfWeek = new Date(start).getDay();
 
         const branches = await prisma.branch.findMany({ where: { isActive: true } });
 
         for (const branch of branches) {
-            // 1. Calculate Total Sales
+            if (branch.closingType === 'periodic' && dayOfWeek !== branch.closeDay) continue;
+
             const sales = await prisma.saleH.aggregate({
-                where: {
-                    branchId: branch.id,
-                    createdAt: { gte: start, lte: end }
-                },
+                where: { branchId: branch.id, createdAt: { gte: start, lte: end } },
                 _sum: { total: true }
             });
             const totalSales = Number(sales._sum.total || 0);
 
-            // 2. Calculate Total Expenses
             const expenses = await prisma.expense.aggregate({
-                where: {
-                    branchId: branch.id,
-                    createdAt: { gte: start, lte: end }
-                },
+                where: { branchId: branch.id, createdAt: { gte: start, lte: end } },
                 _sum: { amount: true }
             });
             const totalExpenses = Number(expenses._sum.amount || 0);
 
-            // 3. Calculate Net Amount
             const netAmount = totalSales - totalExpenses;
 
-            // 4. Save to CashClosing (Upsert to allow re-running if needed)
             await prisma.cashClosing.upsert({
-                where: {
-                    date_branchId: {
-                        date: start,
-                        branchId: branch.id
-                    }
-                },
-                update: {
-                    totalSales,
-                    totalExpenses,
-                    netAmount
-                },
-                create: {
-                    date: start,
-                    branchId: branch.id,
-                    totalSales,
-                    totalExpenses,
-                    netAmount
-                }
+                where: { date_branchId: { date: start, branchId: branch.id } },
+                update: { totalSales, totalExpenses, netAmount },
+                create: { date: start, branchId: branch.id, totalSales, totalExpenses, netAmount }
             });
 
-            console.log(`Cierre completado para sucursal ${branch.name}. Ventas: ${totalSales}, Gastos: ${totalExpenses}, Neto: ${netAmount}`);
+            console.log(`Cierre completado para ${branch.name}. Ventas: ${totalSales}, Gastos: ${totalExpenses}, Neto: ${netAmount}`);
+
+            await prisma.cashOpening.updateMany({
+                where: { branchId: branch.id, date: start, closedAt: null },
+                data: { closedAt: new Date() }
+            });
         }
     } catch (error) {
-        console.error('Error durante el cierre de caja automático:', error);
+        console.error('Error durante el cierre de caja:', error);
     }
 };
 
-const scheduleClosingJob = async () => {
+const runOpeningForDate = async (targetDate) => {
     try {
-        if (activeTask) {
-            activeTask.stop();
-        }
+        const dateStr = targetDate.toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+        const openingDate = toSVDate(dateStr);
+        const branches = await prisma.branch.findMany({ where: { isActive: true } });
 
-        const config = await prisma.masterConfig.findFirst();
-        const timeStr = config?.autoClosingTime;
-
-        if (!timeStr) {
-            console.log('Cierre automático de caja está deshabilitado.');
-            return;
-        }
-
-        const [hours, minutes] = timeStr.split(':');
-
-        const cronExpression = `${minutes} ${hours} * * *`;
-        console.log(`Programando cierre automático de caja a las ${timeStr} (${cronExpression})`);
-
-        activeTask = cron.schedule(cronExpression, async () => {
-            console.log('--- EJECUTANDO CIERRE AUTOMÁTICO Y DESCONEXIÓN GLOBAL ---');
-            
-            // Emitir desconexión forzada a todos los usuarios via Socket.io
-            const io = getIO();
-            if (io) {
-                io.emit('FORCE_LOGOUT', { message: 'Cierre de sistema programado ejecutado.' });
-                console.log('Evento FORCE_LOGOUT emitido a todos los clientes.');
+        for (const branch of branches) {
+            const dayOfWeek = new Date(openingDate).getDay();
+            let shouldOpen = true;
+            if (branch.closingType === 'periodic') {
+                shouldOpen = dayOfWeek === branch.openDay;
             }
 
-            // Run for the current day
+            if (!shouldOpen) continue;
+
+            const existing = await prisma.cashOpening.findUnique({
+                where: { branchId_date: { branchId: branch.id, date: openingDate } }
+            });
+            if (!existing) {
+                await prisma.cashOpening.create({
+                    data: { branchId: branch.id, date: openingDate, amount: 0, openedById: null }
+                });
+                console.log(`Apertura automática para ${branch.name} el ${dateStr} ($0)`);
+            }
+        }
+    } catch (error) {
+        console.error('Error durante la apertura automática:', error);
+    }
+};
+
+const scheduleJobs = async () => {
+    if (activeClosingTask) activeClosingTask.stop();
+    if (activeOpeningTask) activeOpeningTask.stop();
+
+    const config = await prisma.masterConfig.findFirst();
+    const closingTime = config?.autoClosingTime;
+    const openingTime = config?.autoOpeningTime;
+
+    if (closingTime) {
+        const [cH, cM] = closingTime.split(':');
+        const closingCron = `${cM} ${cH} * * *`;
+        console.log(`Cron de cierre programado: ${closingTime} (${closingCron})`);
+        activeClosingTask = cron.schedule(closingCron, async () => {
+            console.log('--- EJECUTANDO CIERRE AUTOMÁTICO ---');
+            const io = getIO();
+            if (io) {
+                io.emit('FORCE_LOGOUT', { message: 'Cierre de sistema programado.' });
+            }
             await runClosingForDate(new Date());
         });
+    } else {
+        console.log('Cierre automático deshabilitado.');
+    }
 
-    } catch (error) {
-        console.error('Error programando el cron de cierre de caja:', error);
+    if (openingTime) {
+        const [oH, oM] = openingTime.split(':');
+        const openingCron = `${oM} ${oH} * * *`;
+        console.log(`Cron de apertura programado: ${openingTime} (${openingCron})`);
+        activeOpeningTask = cron.schedule(openingCron, async () => {
+            console.log('--- EJECUTANDO APERTURA AUTOMÁTICA ---');
+            await runOpeningForDate(new Date());
+        });
+    } else {
+        console.log('Apertura automática deshabilitada.');
     }
 };
 
 module.exports = {
-    scheduleClosingJob,
-    runClosingForDate
+    scheduleJobs,
+    runClosingForDate,
+    runOpeningForDate
 };

@@ -225,6 +225,42 @@ En el modal de cobro, seleccionar **PAGO PARCIAL**:
 - **Pendiente**: Modal con formulario de personalización (esperando formato del admin)
 - **Pendiente**: En historial, modal solo lectura con imagen ampliable
 
+### Apertura y Cierre Automáticos (Sesión 04-05 Ago)
+- **Apertura automática**: cron en `cron.service.js` crea `CashOpening` con $0 para cada sucursal activa, según hora `autoOpeningTime` en MasterConfig.
+   - Diaria: todos los días a la hora configurada.
+   - Semanal: solo el día `openDay` configurado (Lunes por default).
+- **Cierre automático**: cron existente ahora filtra por `closeDay` en sucursales periódicas — solo guarda `CashClosing` el día correcto. Marca `closedAt` en la apertura vigente.
+- **Configuración**: Settings → **Caja** (pestaña unificada). Toggles Cierre/Apertura + horas independientes + ciclo por sucursal (Diaria/Semanal + días).
+- **Apertura manual**: botón "Apertura de Caja" en Cortes de Caja. Permite crear a posteriori (fecha custom). Warning toast si no es Lunes. Requiere PIN de Super Admin.
+
+### Cortes de Caja: Ver Detalles y Cuadre (Sesión 04-05 Ago)
+- **Modal "Ver Detalles"** (antes "Kardex"): modal compacto con:
+   - Tarjetas por método de pago (EFECTIVO/TARJETA/TRANSFERENCIA/CRÉDITO) con count y monto.
+   - **Cuadre de efectivo**: apertura + ventas efectivo + abonos a crédito − gastos = esperado. Input "Efectivo contado" con diferencia (CUADRA/SOBRANTE/FALTANTE).
+- **Resumen en vivo en la tabla**: 3 mini-tarjetas en el header (Ventas del Periodo, Gastos del Periodo, Neto) — acumulan desde apertura vigente hasta ahora. Refresco cada 60s.
+- **Resumen del Día/Semana (`/summary`)**: ahora dinámico según closingType (diario = hoy, semanal = desde apertura vigente). Muestra rango "Lun 04/08 → Sáb 09/08" y ventas acumuladas del periodo.
+
+### Reporte de Envíos por Encomendista (Sesión 04-05 Ago)
+- En **Reports** → "Envíos por Encomendista" (módulo cian): tabla con count, total vendido, costo envío acumulado, desglose por estado (pendientes/despachados/entregados).
+- Botón "Ver N" por fila → modal con detalle de cada envío (cliente, items, vendedor, estado, fechas).
+- Respeta el filtro de fecha y sucursal del header.
+
+### Filtros Dinámicos en Reportes (Sesión 04-05 Ago)
+- En **Reports** y **Comisiones** (SellerReport), los filtros disparan automáticamente con debounce de 400ms — sin botón "Filtrar"/"Consultar" visible.
+- Badge "Actualizando..." mientras carga.
+
+### Fix de Timezone (Sesión 04-05 Ago)
+- `backend/utils/tz.js` centraliza la zona horaria de El Salvador (UTC-6):
+   - `toSVDate(str)` — inicio del día en SV (para `shippingDate`, `dueDate`, `deliveryDate`, `customDate`).
+   - `toSVNoon(str)` — mediodía seguro (para expenses/purchases, evita DST off-by-one).
+   - `toSVEndOfDay(str)` — fin del día en SV (para `where.lte`).
+- Reemplaza 34 ocurrencias de patrones hardcodeados en 8 controllers. Evita futuros bugs tipo "se guarda un día antes".
+- **Fix puntual** (04 Ago): `shippingDate`, `dueDate`, `deliveryDate` se guardaban un día antes por falta de offset. Arreglado usando las nuevas funciones.
+
+### Cambios de Nomenclatura (Sesión 04-05 Ago)
+- Label de envío impreso: "Delivery:" → "Encomendista:" (requerido por el cliente).
+- Modal de cobro: sección "DELIVERY/ENCOMENDISTA", placeholder "Buscar encomendista...".
+
 ---
 
 ## 6. Mantenimiento
@@ -279,6 +315,19 @@ Crea: 38 permisos, 3 roles, superadmin (PIN: `020518`), sucursal por defecto, cl
 | PWA Update | Eliminado `initAppVersionSync` que causaba recargas en logout. `registerType: 'prompt'` con notificación única por versión vía localStorage |
 | Error Config | `JSON.parse` duplicado en `labelFields` corregido (backend ya lo parsea) |
 | DB local | Advertencia: no subir `misventas.db` local al VPS |
+
+---
+
+## Fixes Aplicados (04-05/08/2026)
+
+| Fix | Descripción |
+|-----|-------------|
+| Fecha envío off-by-one | `shippingDate`, `dueDate`, `deliveryDate` se guardaban un día antes por falta de offset `-06:00`. Arreglado con `tz.js` |
+| Dropddelivery 404 | Ruta `/closings/details` no registrada en `closing.routes.js` + método `getClosingDetails` faltante en `closingApi`. Agregados ambos |
+| Selección delivery checkout | En tablets/touchpads el dropdown se desmontaba antes del click (onBlur timeout 200ms vs touch delay 300ms). Eliminado `isDeliverySearchFocused`, cambiado `<div>` por `<button>` |
+| Cortes de caja crash pantalla blanca | `Object.entries(closingDetails.paymentBreakdown)` revienta si `paymentBreakdown` es null/undefined. Agregado guard `|| {}` y `!closingDetails.movements` |
+| branchConfig no cargaba al recargar Settings | Solo se populaba al hacer cambios manuales, nunca cargaba desde Branch. Agregado fetch + merge en `useEffect` de branches |
+| `window.confirm` feo en apertura | Reemplazado por toast custom de react-hot-toast con botones "Cancelar"/"Proceder" cuando la fecha no es Lunes |
 
 ---
 

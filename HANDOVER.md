@@ -112,6 +112,46 @@ Desde Settings → Barra Lateral. Se almacena como JSON en `masterConfig.sidebar
 - Se configura en creación/edición de producto, junto a proveedores
 - Uso futuro: reportes de comisiones por vendedor
 
+## Última sesión (04-05 Ago 2026) — Resumen de cambios (GLM)
+
+### ✅ Implementado
+| Feature | Descripción |
+|---------|-------------|
+| **Label de Envío: Encomendista** | `LabelModal.tsx:93` cambió "Delivery:" → "Encomendista:" (requerido por el cliente) |
+| **Modal de Cobro (CheckoutModal): ENCOMENDISTA** | Título sección "DELIVERY/ENCOMENDISTA" + placeholder "Buscar encomendista..." |
+| **Fix selección delivery en checkout** | Dropdown de delivery se desmontaba antes del click (touch delay en tablets/touchpads). Fix: eliminado `isDeliverySearchFocused` con onBlur timeout, cambiado `<div>` por `<button>` en items (click confiable en touch) |
+| **Reporte Envíos por Encomendista** | Nuevo módulo en Reports (cian): agrupa envíos por delivery con count, total vendido, costo envío, desglose por estado (P/D/E) + tarjetas resumen |
+| **Modal detalle encomendista** | Botón "Ver N" por fila abre modal con tarjetas de cada envío: cliente, items desglosados, vendedor, estado, fechas |
+| **Filtros dinámicos Reports** | Eliminado botón "Filtrar" → debounce 400ms dispara automáticamente al cambiar fechas/sucursal. Badge "Actualizando..." en vuelo |
+| **Filtros dinámicos Comisiones** | `SellerReport.tsx`: mismo debounce 400ms, eliminado botón "Consultar", badge "Actualizando..." |
+| **Fix bug fecha envío (off-by-one)** | `shippingDate`, `dueDate`, `deliveryDate` se guardaban un día antes por falta de offset `-06:00`. Arreglado en `sale.controller.js:133,134,602` |
+| **Fix bug recuperación delivery** | El admin no podía seleccionar delivery (404 en `closings/details`). Causa: ruta no registrada en `closing.routes.js` + método faltante en `closingApi` |
+| **Cierre de Caja robusto** | `getClosingDetails` ahora retorna: `paymentBreakdown` (agrupado por método EFECTIVO/TARJETA/TRANSFERENCIA/CRÉDITO) + `cashSummary` (apertura + ventas efectivo + abonos − gastos = esperado) + `movements` con método + tipo PAYMENT (abonos a crédito). Excluye ventas anuladas |
+| **Modal Ver Detalles rediseñado** | Botón "Kardex" → "Ver Detalles". Modal compacto (580px): tarjetas por método de pago + cuadre de efectivo editable (Efectivo contado → CUADRA/SOBRANTE/FALTANTE). Sin timeline (se ve en Historial) |
+| **Apertura de Caja manual** | Modal en Cortes de Caja: monto + fecha + sucursal. Carga última apertura existente (modo editar). Warning si día no es Lunes (toast custom con botones, sin `window.confirm`). PIN de Super Admin obligatorio |
+| **Apertura manual a posteriori** | `PUT /openings/:id` permite editar monto/fecha de apertura existente con PIN admin |
+| **Apertura Automática (cron)** | `runOpeningForDate` en `cron.service.js`: crea CashOpening con $0 para cada sucursal activa si no existe. Respeta `closingType` (daily = todos los días, periodic = solo `openDay`) |
+| **Cierre Automático por día** | `runClosingForDate` ahora filtra por `closeDay` para sucursales periódicas (solo corre el día correcto). Marca `closedAt` en apertura |
+| **Settings: pestaña "Caja"** | Unificadas "Automatización" + "Apertura" en una sola. Toggles Cierre/Apertura + horas + ciclo por sucursal (Diaria/Semanal + días). Importado `Wallet` y `ShieldCheck` |
+| **Settings: hora de apertura** | Nuevo campo `autoOpeningTime` en MasterConfig (default "06:00"). Toggle independiente. Requiere `prisma db push` (nueva columna) |
+| **Settings: branchConfig carga** | Fix: `branchConfig` se pobla al cargar branches (antes solo se seteaba al hacer cambios manuales, por eso recargaba como "daily") |
+| **Resumen dinámico (DailySummary)** | `/summary` ahora usa `getPeriodSummary`: rango según apertura vigente (diario = hoy, periódico = desde apertura vigente hasta ahora). Título "Resumen de la Semana" si es periódico. Muestra ventas acumuladas del periodo + count |
+| **Cortes de Caja: resumen en vivo** | 3 mini-tarjetas en header: Ventas del Periodo (con count), Gastos del Periodo, Neto (Semana/Día). Refresco cada 60s. Respeta sucursal seleccionada |
+| **Timezone util centralizado** | `backend/utils/tz.js` con `toSVDate`, `toSVNoon`, `toSVEndOfDay`. Reemplaza 34 patrones hardcodeados en 8 controllers (sale, opening, closing, stats, purchase, expense, inventory, projection). Evita futuros bugs de off-by-one por zona horaria |
+
+### ⏳ Pendiente de sesiones anteriores
+- Refinar lógica de reembolso (casos: pago parcial con envío, tarjeta) — reembolso productos ya resuelto
+- Diseños/Stamping: `customData` en SaleD, modal personalización (esperando formato admin), modal solo lectura con imagen
+- Confirmar si los deliverys van en checkout o solo en modal de cliente
+- Labels: altura fija según el tamaño que compren los clientes (70×50mm recomendado) — ajustar campos si no cabe
+
+### 📦 Archivos nuevos en esta sesión
+- `backend/utils/tz.js` (nuevo)
+
+### 📝 Notas
+- **Deploy requiere `prisma db push`** (nueva columna `autoOpeningTime` en MasterConfig). No borra datos.
+- Recrear Prisma Client en el VPS: `npx prisma generate && npx prisma db push`
+
 ## Última sesión (29 Jul 2026) — Resumen de cambios
 
 ### ✅ Implementado

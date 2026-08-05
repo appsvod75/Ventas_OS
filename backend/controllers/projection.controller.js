@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { startOfMonth, endOfMonth, format, differenceInDays, isSameMonth } = require('date-fns');
+const { toSVDate, toSVNoon, toSVEndOfDay } = require('../utils/tz');
 
 const getProjections = async (req, res) => {
     try {
@@ -19,12 +20,13 @@ const getProjections = async (req, res) => {
 
         if (!goal) return res.json(null);
 
-        const start = new Date(month + '-01T00:00:00-06:00');
-        const end = new Date(new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59).toISOString().split('T')[0] + 'T23:59:59-06:00');
+        const start = toSVDate(month + '-01');
+        const lastDayStr = new Date(start.getFullYear(), start.getMonth() + 1, 0).toISOString().split('T')[0];
+        const end = toSVEndOfDay(lastDayStr);
         
         // Forzamos el día local para calcular días transcurridos
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
-        const nowLocal = new Date(`${todayStr}T12:00:00-06:00`);
+        const nowLocal = toSVNoon(todayStr);
         
         // Detailed sales by day for the chart
         const salesData = await prisma.saleH.findMany({
@@ -88,8 +90,9 @@ const getGoals = async (req, res) => {
         
         // Add current_sales for each goal for the history view
         const enrichedGoals = await Promise.all(goals.map(async (goal) => {
-            const start = new Date(goal.monthYear + '-01T00:00:00-06:00');
-            const end = new Date(new Date(start.getFullYear(), start.getMonth() + 1, 0, 23, 59, 59).toISOString().split('T')[0] + 'T23:59:59-06:00');
+            const start = toSVDate(goal.monthYear + '-01');
+            const lastDayStr = new Date(start.getFullYear(), start.getMonth() + 1, 0).toISOString().split('T')[0];
+            const end = toSVEndOfDay(lastDayStr);
             const sales = await prisma.saleH.aggregate({
                 where: {
                     branchId: goal.branchId,

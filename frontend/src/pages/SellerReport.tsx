@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { statsApi, adminAuthApi } from '../services/api';
-import { Search, User, DollarSign, Package, Calendar, TrendingUp, BarChart3, Filter } from 'lucide-react';
+import { Search, User, DollarSign, Package, Calendar, TrendingUp, BarChart3 } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -19,6 +19,12 @@ const SellerReport: React.FC = () => {
         adminAuthApi.getUsers().then(res => setSellers(res.data)).catch(() => {});
     }, []);
 
+    useEffect(() => {
+        const t = setTimeout(() => { fetchData(); }, 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [startDate, endDate, selectedSeller]);
+
     const fetchData = async () => {
         setLoading(true);
         try {
@@ -29,8 +35,6 @@ const SellerReport: React.FC = () => {
         } catch { toast.error('Error al cargar reporte'); }
         finally { setLoading(false); }
     };
-
-    useEffect(() => { fetchData(); }, []);
 
     return (
         <div className="products-page">
@@ -63,9 +67,12 @@ const SellerReport: React.FC = () => {
                             </select>
                         </div>
                     )}
-                    <button onClick={fetchData} className="btn-main" style={{ padding: '0.5rem 1.5rem', height: 'fit-content' }}>
-                        <Filter size={16} /> Consultar
-                    </button>
+                    {loading && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.9rem', height: 'fit-content', borderRadius: '10px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#60a5fa', fontSize: '0.8rem', fontWeight: 700 }}>
+                            <span className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }} />
+                            Actualizando...
+                        </div>
+                    )}
                 </div>
 
                 {loading ? (

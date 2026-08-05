@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { startOfDay, endOfDay } = require('date-fns');
+const { toSVDate, toSVNoon, toSVEndOfDay } = require('../utils/tz');
 
 const registerExpense = async (req, res) => {
     try {
@@ -21,7 +22,7 @@ const registerExpense = async (req, res) => {
                 userId,
                 description,
                 amount: parseFloat(amount),
-                createdAt: date ? new Date(`${date}T12:00:00-06:00`) : undefined
+                createdAt: date ? toSVNoon(date) : undefined
             }
         });
 
@@ -46,8 +47,8 @@ const getDailyExpenses = async (req, res) => {
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
         const targetDateStr = date || todayStr;
         
-        const start = new Date(`${targetDateStr}T00:00:00-06:00`);
-        const end = new Date(`${targetDateStr}T23:59:59-06:00`);
+        const start = toSVDate(targetDateStr);
+        const end = toSVEndOfDay(targetDateStr);
 
         const expenses = await prisma.expense.findMany({
             where: {
@@ -90,7 +91,7 @@ const updateExpense = async (req, res) => {
             data: {
                 description: description ?? expense.description,
                 amount: amount !== undefined ? parseFloat(amount) : expense.amount,
-                createdAt: date ? new Date(`${date}T12:00:00-06:00`) : expense.createdAt
+                createdAt: date ? toSVNoon(date) : expense.createdAt
             }
         });
 

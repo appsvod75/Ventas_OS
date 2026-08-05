@@ -4,7 +4,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 const http = require('http');
 const { initIO } = require('./services/socketManager');
-const { scheduleClosingJob } = require('./services/cron.service');
+const { scheduleJobs, runOpeningForDate } = require('./services/cron.service');
 
 const prisma = require('./db');
 const app = express();
@@ -84,5 +84,6 @@ server.listen(PORT, '0.0.0.0', async () => {
     console.log(`LuckyPOS Backend running on http://0.0.0.0:${PORT}`);
     // Start seeds and jobs
     await seedDefaultClient();
-    await scheduleClosingJob();
+    await scheduleJobs();
+    await runOpeningForDate(new Date());
 });

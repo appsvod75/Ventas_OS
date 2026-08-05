@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { getIO } = require('../services/socketManager');
+const { toSVDate, toSVNoon, toSVEndOfDay } = require('../utils/tz');
 
 const getInventoryByBranch = async (req, res) => {
     let { branch_id } = req.params;
@@ -91,7 +92,7 @@ const createTransfer = async (req, res) => {
                     toBranchId: parseInt(to_branch_id),
                     userId: user_id,
                     status: finalStatus,
-                    createdAt: customDate ? new Date(customDate + 'T12:00:00-06:00') : undefined,
+                    createdAt: customDate ? toSVNoon(customDate) : undefined,
                     details: {
                         create: items.map(item => ({
                             productId: item.product_id,
@@ -426,8 +427,8 @@ const getLowStockReport = async (req, res) => {
         });
 
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
-        const nowLocal = new Date(`${todayStr}T23:59:59-06:00`);
-        const thirtyDaysAgo = new Date(`${todayStr}T00:00:00-06:00`);
+        const nowLocal = toSVEndOfDay(todayStr);
+        const thirtyDaysAgo = toSVDate(todayStr);
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         // 3. Fetch all relevant sales in one query

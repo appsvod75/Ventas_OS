@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { logAudit } = require('../utils/audit');
+const { toSVDate, toSVEndOfDay } = require('../utils/tz');
 const { getIO } = require('../services/socketManager');
 
 const createSale = async (req, res) => {
@@ -130,14 +131,14 @@ const createSale = async (req, res) => {
                     discount: Number(discount) || 0,
                     shipping: Number(shipping) || 0,
                     paymentMethod: payment_method,
-                    dueDate: due_date ? new Date(due_date) : null,
-                    shippingDate: shipping_date ? new Date(shipping_date) : null,
+                    dueDate: due_date ? toSVDate(due_date) : null,
+                    shippingDate: shipping_date ? toSVDate(shipping_date) : null,
                     fulfillmentStatus: fulfillment_status || 'VENDIDO',
                     ...(delivery_id && { deliveryId: parseInt(delivery_id) }),
                     balance: balance !== undefined ? Number(balance) : (payment_method === 'CREDITO' ? finalTotal : 0),
                     amountTendered: Number(amount_tendered) || finalTotal,
                     change: Number(change) || 0,
-                    createdAt: (user_role === 'Admin' && customDate) ? new Date(customDate.includes('T') ? `${customDate}-06:00` : `${customDate}T${new Date().toLocaleTimeString('en-GB')}-06:00`) : undefined,
+                    createdAt: (user_role === 'Admin' && customDate) ? toSVDate(customDate) : undefined,
                     details: {
                         create: saleDetailsData
                     }
@@ -225,23 +226,17 @@ const getSalesHistory = async (req, res) => {
             whereClause.userId = req.user.id;
         }
 
-        // --- Lógica de Filtrado por Fecha (Fixed with Offset -06:00) ---
-        // Forzamos el offset para que la medianoche sea la local.
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
-        
-        let startStr = startDate ? `${startDate}T00:00:00-06:00` : null;
-        let endStr = endDate ? (endDate.includes('T') ? `${endDate.split('T')[0]}T23:59:59-06:00` : `${endDate}T23:59:59-06:00`) : `${todayStr}T23:59:59-06:00`;
 
         let start;
-        if (startStr) {
-            start = new Date(startStr);
+        if (startDate) {
+            start = toSVDate(startDate);
         } else {
-            // Default: 3 días atrás al inicio del día local
-            start = new Date(`${todayStr}T00:00:00-06:00`);
+            start = toSVDate(todayStr);
             start.setDate(start.getDate() - 3);
         }
 
-        let end = new Date(endStr);
+        let end = endDate ? toSVEndOfDay(endDate.includes('T') ? endDate.split('T')[0] : endDate) : toSVEndOfDay(todayStr);
 
         whereClause.createdAt = {
             gte: start,
@@ -537,7 +532,7 @@ const updateSale = async (req, res) => {
                     clientId: clientId ? parseInt(clientId) : originalSale.clientId,
                     amountTendered: amount_tendered !== undefined ? Number(amount_tendered) : originalSale.amountTendered,
                     change: change !== undefined ? Number(change) : (amount_tendered !== undefined ? Number(amount_tendered) : Number(originalSale.amountTendered)) - finalTotal,
-                    createdAt: customDate ? new Date(customDate.includes('T') ? `${customDate}-06:00` : `${customDate}T${new Date().toLocaleTimeString('en-GB')}-06:00`) : undefined,
+                    createdAt: customDate ? toSVDate(customDate) : undefined,
                     // Si era crédito, actualizamos balance para reflejar el nuevo total
                     balance: (payment_method === 'CREDITO' || originalSale.paymentMethod === 'CREDITO') ? finalTotal : 0,
                     details: {
@@ -599,7 +594,7 @@ const updateDeliveryDate = async (req, res) => {
     try {
         const sale = await prisma.saleH.update({
             where: { id: parseInt(id) },
-            data: { deliveryDate: deliveryDate ? new Date(deliveryDate) : null }
+            data: { deliveryDate: deliveryDate ? toSVDate(deliveryDate) : null }
         });
         res.json({ message: 'Fecha de entrega actualizada', sale });
     } catch (error) {

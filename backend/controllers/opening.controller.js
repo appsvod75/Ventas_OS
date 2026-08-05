@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { startOfDay, endOfDay } = require('date-fns');
+const { toSVDate } = require('../utils/tz');
 
 const getLastOpening = async (req, res) => {
     try {
@@ -25,7 +26,7 @@ const createOpening = async (req, res) => {
         if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
             branchId = req.user.branch_id;
         }
-        const openingDate = date ? new Date(`${date}T00:00:00-06:00`) : new Date();
+        const openingDate = date ? toSVDate(date) : new Date();
         const existing = await prisma.cashOpening.findUnique({
             where: { branchId_date: { branchId: parseInt(branchId), date: openingDate } }
         });
@@ -37,6 +38,42 @@ const createOpening = async (req, res) => {
         res.json(opening);
     } catch (error) {
         res.status(500).json({ message: 'Error al crear apertura' });
+    }
+};
+
+const updateOpening = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { amount, date } = req.body;
+        let branchId = req.body.branchId;
+        if (req.user.role !== 'Super Admin' && req.user.role !== 'Admin') {
+            return res.status(403).json({ message: 'Solo admin puede editar aperturas' });
+        }
+
+        const existing = await prisma.cashOpening.findUnique({ where: { id: parseInt(id) } });
+        if (!existing) return res.status(404).json({ message: 'Apertura no encontrada' });
+
+        const data = {};
+        if (amount !== undefined) data.amount = parseFloat(amount);
+        if (date) {
+            const newDate = toSVDate(date);
+            const conflict = await prisma.cashOpening.findUnique({
+                where: { branchId_date: { branchId: existing.branchId, date: newDate } }
+            });
+            if (conflict && conflict.id !== existing.id) {
+                return res.status(400).json({ message: 'Ya existe otra apertura para esa fecha' });
+            }
+            data.date = newDate;
+        }
+        if (branchId !== undefined) {
+            data.branchId = parseInt(branchId);
+        }
+
+        const updated = await prisma.cashOpening.update({ where: { id: parseInt(id) }, data });
+        res.json(updated);
+    } catch (error) {
+        console.error('Error updating opening:', error);
+        res.status(500).json({ message: 'Error al actualizar apertura' });
     }
 };
 
@@ -97,4 +134,4 @@ const checkOpening = async (req, res) => {
     }
 };
 
-module.exports = { getLastOpening, createOpening, checkOpening };
+module.exports = { getLastOpening, createOpening, updateOpening, checkOpening };

@@ -7,7 +7,7 @@ import {
   Settings as SettingsIcon, Save, Building, MapPin, Phone, Globe, Image as ImageIcon, Key, 
   StickyNote, Clock, List, ArrowUp, ArrowDown, GripVertical, TriangleAlert, ShieldAlert, 
   Trash2, RefreshCcw, X, CreditCard, ChevronRight, CheckCircle2, AlertCircle, ShoppingCart, 
-  Eye, EyeOff, Printer, LayoutDashboard, ShieldCheck, Calendar, Download 
+  Eye, EyeOff, Printer, LayoutDashboard, ShieldCheck, Calendar, Download, Wallet 
 } from 'lucide-react';
 import { motion, Reorder, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -179,12 +179,15 @@ const Settings: React.FC = () => {
         ticketFooter: '',
         isAutoClosingEnabled: true,
         autoClosingTime: '23:59',
+        isAutoOpeningEnabled: true,
+        autoOpeningTime: '06:00',
         emailWebhookUrl: '',
         enableEmailTickets: false,
         enableQrCode: false,
         ticketWidth: '58mm',
         sidebarConfig: [] as { key: string; label: string; enabled: boolean }[],
-        dashboardConfig: [] as { key: string; label: string; enabled: boolean }[]
+        dashboardConfig: [] as { key: string; label: string; enabled: boolean }[],
+        branchConfig: {} as Record<number, any>
     });
     const [loading, setLoading] = useState(false);
     const [dangerModal, setDangerModal] = useState<{ isOpen: boolean; type: 'sales' | 'inventory' | 'products' | 'counter' | null }>({ isOpen: false, type: null });
@@ -197,7 +200,24 @@ const Settings: React.FC = () => {
     useEffect(() => {
         fetchConfig();
         adminAuthApi.getRoles().then(res => setRoles(res.data)).catch(() => {});
-        import('../services/api').then(({ branchApi }) => branchApi.getBranches().then(res => setBranches(res.data)).catch(() => {}));
+        import('../services/api').then(({ branchApi }) => {
+            branchApi.getBranches().then(res => {
+                setBranches(res.data);
+                setConfig((prev: any) => {
+                    const existing = prev.branchConfig || {};
+                    const merged: any = {};
+                    res.data.forEach((b: any) => {
+                        merged[b.id] = existing[b.id] || {
+                            closingType: b.closingType || 'daily',
+                            openDay: b.openDay ?? 1,
+                            closeDay: b.closeDay ?? 6,
+                            strictOpen: b.strictOpen ?? false
+                        };
+                    });
+                    return { ...prev, branchConfig: merged };
+                });
+            }).catch(() => {});
+        });
     }, []);
 
     const fetchConfig = async () => {
@@ -214,6 +234,8 @@ const Settings: React.FC = () => {
                     ticketFooter: res.data.ticketFooter || '',
                     isAutoClosingEnabled: res.data.autoClosingTime !== '',
                     autoClosingTime: res.data.autoClosingTime || '23:59',
+                    isAutoOpeningEnabled: res.data.autoOpeningTime !== '',
+                    autoOpeningTime: res.data.autoOpeningTime || '06:00',
                     emailWebhookUrl: res.data.emailWebhookUrl || '',
                     enableEmailTickets: res.data.enableEmailTickets || false,
                     enableQrCode: res.data.enableQrCode || false,
@@ -338,11 +360,10 @@ const Settings: React.FC = () => {
         { id: 'business', label: 'Negocio', icon: <Building size={18} /> },
         { id: 'printing', label: 'IA e Impresión', icon: <StickyNote size={18} /> },
         { id: 'email', label: 'Email', icon: <Globe size={18} /> },
-        { id: 'automation', label: 'Automatización', icon: <Clock size={18} /> },
+        { id: 'cash', label: 'Caja', icon: <Wallet size={18} /> },
         { id: 'sidebar', label: 'Barra Lateral', icon: <List size={18} /> },
         { id: 'dashboard', label: 'Menú Principal', icon: <LayoutDashboard size={18} /> },
         { id: 'roles', label: 'Roles', icon: <ShieldCheck size={18} /> },
-        { id: 'opening', label: 'Apertura', icon: <Calendar size={18} /> },
         { id: 'danger', label: 'Zona de Peligro', icon: <TriangleAlert size={18} color="#ef4444" /> }
     ];
 
@@ -796,39 +817,132 @@ const Settings: React.FC = () => {
                         </div>
                     )}
 
-                    {activeTab === 'automation' && (
-                        <div className="settings-section animate-in fade-in slide-in-from-bottom-2" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '2.5rem', borderRadius: '24px', border: '1px solid #334155' }}>
-                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem', fontSize: '1.4rem', color: 'white' }}>
-                                <Clock size={24} color="#3b82f6" /> Cierre Automatizado de Día
+                    {activeTab === 'cash' && (
+                        <div className="settings-section animate-in fade-in slide-in-from-bottom-2" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '2rem', borderRadius: '24px', border: '1px solid #334155' }}>
+                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '0.5rem', fontSize: '1.4rem', color: 'white' }}>
+                                <Wallet size={24} color="#10b981" /> Apertura y Cierre de Caja
                             </h3>
+                            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                                Programá la apertura y cierre automático, y definí el ciclo de cada sucursal (diario o semanal).
+                            </p>
 
-                            <div style={{ padding: '1.5rem', background: '#0f172a', borderRadius: '16px', border: '1px solid #1e293b' }}>
-                                <div className="field" style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', color: 'white', fontWeight: 700, fontSize: '1.1rem' }}>
+                            {/* === Sección 1: Automatización === */}
+                            <div style={{ padding: '1.5rem', background: '#0f172a', borderRadius: '16px', border: '1px solid #1e293b', marginBottom: '1.5rem' }}>
+                                <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '1rem', fontSize: '1rem' }}>
+                                    🕐 Horarios Automáticos
+                                </h4>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', color: 'white', fontWeight: 700, fontSize: '1.05rem' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={config.isAutoOpeningEnabled}
+                                            onChange={(e) => setConfig({ ...config, isAutoOpeningEnabled: e.target.checked })}
+                                            style={{ width: '22px', height: '22px', accentColor: '#10b981' }}
+                                        />
+                                        Apertura Automática
+                                    </label>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', color: 'white', fontWeight: 700, fontSize: '1.05rem' }}>
                                         <input
                                             type="checkbox"
                                             checked={config.isAutoClosingEnabled}
                                             onChange={(e) => setConfig({ ...config, isAutoClosingEnabled: e.target.checked })}
                                             style={{ width: '22px', height: '22px', accentColor: '#3b82f6' }}
                                         />
-                                        Habilitar Cierre Automático
+                                        Cierre Automático
                                     </label>
                                 </div>
 
-                                {config.isAutoClosingEnabled && (
-                                    <div className="field animate-in fade-in slide-in-from-top-2">
-                                        <label style={{ display: 'block', color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.9rem' }}>Hora de Ejecución Diaria</label>
-                                        <input
-                                            type="time"
-                                            value={config.autoClosingTime}
-                                            onChange={e => setConfig({ ...config, autoClosingTime: e.target.value })}
-                                            style={{ width: '200px', padding: '0.75rem 1rem', borderRadius: '12px', background: '#1e293b', border: '1px solid #334155', color: 'white', colorScheme: 'dark', fontSize: '1.2rem', textAlign: 'center' }}
-                                        />
-                                        <p style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '1rem' }}>
-                                            ⚠️ Al activarse, el sistema consolidará las ventas y gastos del día a la hora indicada.
-                                        </p>
-                                    </div>
+                                <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+                                    {config.isAutoOpeningEnabled && (
+                                        <div className="field animate-in fade-in slide-in-from-top-2" style={{ flex: 1, minWidth: '180px' }}>
+                                            <label style={{ display: 'block', color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.9rem' }}>Hora de Apertura</label>
+                                            <input
+                                                type="time"
+                                                value={config.autoOpeningTime}
+                                                onChange={e => setConfig({ ...config, autoOpeningTime: e.target.value })}
+                                                style={{ width: '100%', maxWidth: '220px', padding: '0.75rem 1rem', borderRadius: '12px', background: '#1e293b', border: '1px solid #10b98140', color: 'white', colorScheme: 'dark', fontSize: '1.2rem', textAlign: 'center' }}
+                                            />
+                                            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
+                                                💰 Crea apertura $0 para cada sucursal (respeta el día configurado abajo).
+                                            </p>
+                                        </div>
+                                    )}
+                                    {config.isAutoClosingEnabled && (
+                                        <div className="field animate-in fade-in slide-in-from-top-2" style={{ flex: 1, minWidth: '180px' }}>
+                                            <label style={{ display: 'block', color: '#94a3b8', marginBottom: '0.75rem', fontSize: '0.9rem' }}>Hora de Cierre</label>
+                                            <input
+                                                type="time"
+                                                value={config.autoClosingTime}
+                                                onChange={e => setConfig({ ...config, autoClosingTime: e.target.value })}
+                                                style={{ width: '100%', maxWidth: '220px', padding: '0.75rem 1rem', borderRadius: '12px', background: '#1e293b', border: '1px solid #334155', color: 'white', colorScheme: 'dark', fontSize: '1.2rem', textAlign: 'center' }}
+                                            />
+                                            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>
+                                                ⚠️ Consolida ventas/gastos. Desconecta a todos los usuarios.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* === Sección 2: Configuración por Sucursal === */}
+                            <div style={{ padding: '1.5rem', background: '#0f172a', borderRadius: '16px', border: '1px solid #1e293b' }}>
+                                <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '0.5rem', fontSize: '1rem' }}>
+                                    🏪 Ciclo por Sucursal
+                                </h4>
+                                <p style={{ color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+                                    Elegí si la sucursal opera en ciclo <strong style={{ color: '#e2e8f0' }}>diario</strong> (abre y cierra cada día) o <strong style={{ color: '#e2e8f0' }}>semanal</strong> (abre un día y cierra otro ese mismo periodo). El modo "Estricto" bloquea ventas si no hay apertura activa.
+                                </p>
+                                {branches.length === 0 && (
+                                    <p style={{ color: '#94a3b8', textAlign: 'center', padding: '1rem' }}>Cargando sucursales...</p>
                                 )}
+                                {branches.map(b => {
+                                    const cfg = config.branchConfig?.[b.id] || { closingType: 'daily', openDay: 1, closeDay: 6, strictOpen: false };
+                                    return (
+                                        <div key={b.id} style={{ background: '#1e293b', borderRadius: '12px', padding: '1rem 1.25rem', marginBottom: '0.75rem', border: '1px solid #334155' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                                                <h5 style={{ color: 'white', fontWeight: 800, margin: 0, fontSize: '0.95rem' }}>{b.name}</h5>
+                                                <span style={{ fontSize: '0.7rem', padding: '0.2rem 0.6rem', borderRadius: '6px', background: cfg.closingType === 'periodic' ? 'rgba(245,158,11,0.15)' : 'rgba(59,130,246,0.15)', color: cfg.closingType === 'periodic' ? '#fbbf24' : '#60a5fa', fontWeight: 700, textTransform: 'uppercase' }}>
+                                                    {cfg.closingType === 'periodic' ? 'Semanal' : 'Diaria'}
+                                                </span>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'end' }}>
+                                                <div className="field">
+                                                    <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tipo de Ciclo</label>
+                                                    <select value={cfg.closingType} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, closingType: e.target.value } } })}
+                                                        style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.7rem', color: 'white', minWidth: '130px' }}>
+                                                        <option value="daily">Diaria</option>
+                                                        <option value="periodic">Semanal</option>
+                                                    </select>
+                                                </div>
+                                                {cfg.closingType === 'periodic' && (
+                                                    <>
+                                                        <div className="field">
+                                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Día Apertura</label>
+                                                            <select value={cfg.openDay} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, openDay: parseInt(e.target.value) } } })}
+                                                                style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.7rem', color: 'white' }}>
+                                                                {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (<option key={i} value={i}>{d}</option>))}
+                                                            </select>
+                                                        </div>
+                                                        <div className="field">
+                                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Día Cierre</label>
+                                                            <select value={cfg.closeDay} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, closeDay: parseInt(e.target.value) } } })}
+                                                                style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem 0.7rem', color: 'white' }}>
+                                                                {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (<option key={i} value={i}>{d}</option>))}
+                                                            </select>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', paddingTop: '0.5rem' }}>
+                                                    <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                        <ShieldCheck size={11} /> Estricto
+                                                    </label>
+                                                    <input type="checkbox" checked={cfg.strictOpen} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, strictOpen: e.target.checked } } })}
+                                                        style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -1065,58 +1179,6 @@ const Settings: React.FC = () => {
                                     </div>
                                 </div>
                             )}
-                        </div>
-                    )}
-
-                    {activeTab === 'opening' && (
-                        <div className="settings-section animate-in fade-in slide-in-from-bottom-2" style={{ background: 'rgba(30, 41, 59, 0.5)', padding: '1.5rem 2rem', borderRadius: '24px', border: '1px solid #334155' }}>
-                            <h3 style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem', fontSize: '1.4rem', color: 'white' }}>
-                                <Calendar size={24} color="#10b981" /> Apertura y Cierre de Caja
-                            </h3>
-                            <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.5rem' }}>
-                                Configure el tipo de apertura de caja por sucursal.
-                            </p>
-                            {branches.map(b => {
-                                const cfg = config.branchConfig?.[b.id] || { closingType: 'daily', openDay: 1, closeDay: 6, strictOpen: false };
-                                return (
-                                    <div key={b.id} style={{ background: '#0f172a', borderRadius: '12px', padding: '1rem', marginBottom: '1rem', border: '1px solid #334155' }}>
-                                        <h4 style={{ color: 'white', fontWeight: 800, marginBottom: '0.75rem' }}>{b.name}</h4>
-                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'end' }}>
-                                            <div className="field">
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Tipo</label>
-                                                <select value={cfg.closingType} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, closingType: e.target.value } } })}
-                                                    style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white', minWidth: '120px' }}>
-                                                    <option value="daily">Diaria</option>
-                                                    <option value="periodic">Periódica</option>
-                                                </select>
-                                            </div>
-                                            {cfg.closingType === 'periodic' && (
-                                                <>
-                                                    <div className="field">
-                                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Día Apertura</label>
-                                                        <select value={cfg.openDay} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, openDay: parseInt(e.target.value) } } })}
-                                                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white' }}>
-                                                            {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (<option key={i} value={i}>{d}</option>))}
-                                                        </select>
-                                                    </div>
-                                                    <div className="field">
-                                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Día Cierre</label>
-                                                        <select value={cfg.closeDay} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, closeDay: parseInt(e.target.value) } } })}
-                                                            style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.5rem', color: 'white' }}>
-                                                            {['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'].map((d, i) => (<option key={i} value={i}>{d}</option>))}
-                                                        </select>
-                                                    </div>
-                                                </>
-                                            )}
-                                            <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem' }}>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase' }}>Estricto</label>
-                                                <input type="checkbox" checked={cfg.strictOpen} onChange={e => setConfig({ ...config, branchConfig: { ...config.branchConfig, [b.id]: { ...cfg, strictOpen: e.target.checked } } })}
-                                                    style={{ width: '18px', height: '18px', accentColor: '#10b981' }} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                );
-                            })}
                         </div>
                     )}
 

@@ -5,6 +5,7 @@ const authMiddleware = require('../middleware/auth.middleware');
 
 router.get('/last', authMiddleware, openingController.getLastOpening);
 router.post('/', authMiddleware, openingController.createOpening);
+router.put('/:id', authMiddleware, openingController.updateOpening);
 router.get('/check', authMiddleware, openingController.checkOpening);
 
 module.exports = router;

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { statsApi, branchApi } from '../services/api';
+import { X } from 'lucide-react';
 import { 
     BarChart3, Calendar, Users, Package, TrendingUp, TrendingDown, 
-    Filter, ArrowLeft, Award, Wallet, Building2, PieChart, ChevronRight
+    ArrowLeft, Award, Wallet, Building2, PieChart, ChevronRight, Truck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, startOfMonth, endOfMonth } from 'date-fns';
 import toast from 'react-hot-toast';
 
-type ReportModule = 'hub' | 'clients' | 'products' | 'financial' | 'branches' | 'users';
+type ReportModule = 'hub' | 'clients' | 'products' | 'financial' | 'branches' | 'users' | 'deliveries';
 
 const Reports: React.FC = () => {
     const [activeModule, setActiveModule] = useState<ReportModule>('hub');
@@ -26,10 +27,14 @@ const Reports: React.FC = () => {
 
     useEffect(() => {
         loadBranches();
-        if (activeModule !== 'hub') {
-            fetchReports();
-        }
-    }, [activeModule]);
+    }, []);
+
+    useEffect(() => {
+        if (activeModule === 'hub') return;
+        const t = setTimeout(() => { fetchReports(); }, 400);
+        return () => clearTimeout(t);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeModule, dateRange.start, dateRange.end, branchId]);
 
     const loadBranches = async () => {
         try {
@@ -73,6 +78,7 @@ const Reports: React.FC = () => {
         { id: 'users', title: 'Ventas por Vendedor', desc: 'Rendimiento por personal', icon: <Award size={24} />, color: '#ef4444' },
         { id: 'financial', title: 'Balance Financiero', desc: 'Ventas vs Gastos y Utilidad', icon: <TrendingUp size={24} />, color: '#10b981' },
         { id: 'branches', title: 'Rendimiento Sucursales', desc: 'Comparativa de ventas por local', icon: <Building2 size={24} />, color: '#8b5cf6' },
+        { id: 'deliveries', title: 'Envíos por Encomendista', desc: 'Pedidos saliendo por delivery', icon: <Truck size={24} />, color: '#06b6d4' },
     ];
 
     return (
@@ -95,7 +101,7 @@ const Reports: React.FC = () => {
                                 {activeModule === 'hub' ? 'Centro de Reportes' : hubModules.find(m => m.id === activeModule)?.title}
                             </h1>
                             <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
-                                {activeModule === 'hub' ? 'Selecciona un módulo de análisis especializado' : 'Filtra por periodo para actualizar los datos'}
+                                {activeModule === 'hub' ? 'Selecciona un módulo de análisis especializado' : 'Cambia el periodo y los datos se actualizan solos'}
                             </p>
                         </div>
                     </div>
@@ -117,15 +123,11 @@ const Reports: React.FC = () => {
                             />
                         </div>
 
-                        {activeModule !== 'hub' && (
-                            <button 
-                                onClick={fetchReports} 
-                                disabled={loading}
-                                className="btn-primary" 
-                                style={{ padding: '0 1.25rem', height: '38px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
-                            >
-                                <Filter size={14} /> {loading ? 'Cargando...' : 'Filtrar'}
-                            </button>
+                        {activeModule !== 'hub' && loading && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0 0.75rem', height: '38px', borderRadius: '10px', background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)', color: '#60a5fa', fontSize: '0.8rem', fontWeight: 700 }}>
+                                <span className="loading-spinner" style={{ width: '14px', height: '14px', borderWidth: '2px' }} />
+                                Actualizando...
+                            </div>
                         )}
                     </div>
                 </header>
@@ -202,6 +204,7 @@ const Reports: React.FC = () => {
                                         {activeModule === 'users' && <UserReport data={data} formatCurrency={formatCurrency} />}
                                         {activeModule === 'financial' && <FinancialReport data={data} formatCurrency={formatCurrency} />}
                                         {activeModule === 'branches' && <BranchReport data={data} formatCurrency={formatCurrency} />}
+                                        {activeModule === 'deliveries' && <DeliveryReport data={data} formatCurrency={formatCurrency} dateRange={dateRange} branchId={branchId} />}
                                     </>
                                 )}
                             </motion.div>
@@ -493,6 +496,244 @@ const BranchReport: React.FC<{ data: any, formatCurrency: any }> = ({ data, form
                     </div>
                 )}
             </div>
+        </div>
+    );
+};
+
+const STATUS_INFO: Record<string, { label: string; color: string; bg: string }> = {
+    VENDIDO: { label: 'Pendiente', color: '#60a5fa', bg: 'rgba(59,130,246,0.15)' },
+    DESPACHADO: { label: 'Despachado', color: '#fbbf24', bg: 'rgba(245,158,11,0.15)' },
+    ENTREGADO: { label: 'Entregado', color: '#10b981', bg: 'rgba(16,185,129,0.15)' }
+};
+
+const DeliveryReport: React.FC<{ data: any, formatCurrency: any, dateRange: any, branchId: any }> = ({ data, formatCurrency, dateRange, branchId }) => {
+    const deliveries = Array.isArray(data?.salesByDelivery) ? data.salesByDelivery : [];
+
+    const [modalDelivery, setModalDelivery] = useState<any>(null);
+    const [detailData, setDetailData] = useState<any[]>([]);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+
+    const openDetail = async (delivery: any) => {
+        setModalDelivery(delivery);
+        setLoadingDetail(true);
+        setDetailData([]);
+        try {
+            const res = await statsApi.getDeliveryDetail({
+                startDate: dateRange.start,
+                endDate: dateRange.end,
+                branchId,
+                deliveryId: delivery.id
+            });
+            setDetailData(res.data);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const totalShipments = deliveries.reduce((acc: number, d: any) => acc + (Number(d.count) || 0), 0);
+    const totalRevenue = deliveries.reduce((acc: number, d: any) => acc + (Number(d.total) || 0), 0);
+    const totalShippingCost = deliveries.reduce((acc: number, d: any) => acc + (Number(d.shippingTotal) || 0), 0);
+    const totalPendientes = deliveries.reduce((acc: number, d: any) => acc + (Number(d.pendientes) || 0), 0);
+    const totalDespachados = deliveries.reduce((acc: number, d: any) => acc + (Number(d.despachados) || 0), 0);
+    const totalEntregados = deliveries.reduce((acc: number, d: any) => acc + (Number(d.entregados) || 0), 0);
+    const maxCount = Math.max(...deliveries.map((d: any) => Number(d.count) || 0), 1);
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+                <div style={{ background: '#0f172a', borderRadius: '20px', padding: '1.25rem 1.5rem', border: '1px solid #1e293b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#06b6d420', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Truck size={18} /></div>
+                        <span style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 700 }}>Envíos Totales</span>
+                    </div>
+                    <p style={{ color: 'white', fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{totalShipments}</p>
+                </div>
+                <div style={{ background: '#0f172a', borderRadius: '20px', padding: '1.25rem 1.5rem', border: '1px solid #1e293b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#10b98120', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TrendingUp size={18} /></div>
+                        <span style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 700 }}>Recaudado</span>
+                    </div>
+                    <p style={{ color: '#10b981', fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{formatCurrency(totalRevenue)}</p>
+                </div>
+                <div style={{ background: '#0f172a', borderRadius: '20px', padding: '1.25rem 1.5rem', border: '1px solid #1e293b' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.5rem' }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#f59e0b20', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Wallet size={18} /></div>
+                        <span style={{ color: '#94a3b8', fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 700 }}>Costo Envíos</span>
+                    </div>
+                    <p style={{ color: '#f59e0b', fontSize: '1.8rem', fontWeight: 800, margin: 0 }}>{formatCurrency(totalShippingCost)}</p>
+                </div>
+            </div>
+
+            <div style={{ background: '#0f172a', borderRadius: '24px', border: '1px solid #1e293b', overflow: 'hidden' }}>
+                <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Truck size={24} color="#06b6d4" /> Envíos por Encomendista
+                        </h2>
+                        <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>Pedidos asignados a cada delivery en el periodo seleccionado. Tocá una fila para ver el detalle de envíos.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                        <span style={{ padding: '0.35rem 0.75rem', borderRadius: '8px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa', fontSize: '0.75rem', fontWeight: 700 }}>{totalPendientes} Pendientes</span>
+                        <span style={{ padding: '0.35rem 0.75rem', borderRadius: '8px', background: 'rgba(245,158,11,0.15)', color: '#fbbf24', fontSize: '0.75rem', fontWeight: 700 }}>{totalDespachados} Despachados</span>
+                        <span style={{ padding: '0.35rem 0.75rem', borderRadius: '8px', background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.75rem', fontWeight: 700 }}>{totalEntregados} Entregados</span>
+                    </div>
+                </div>
+
+                <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <thead style={{ position: 'sticky', top: 0, background: '#0f172a', zIndex: 10 }}>
+                            <tr style={{ textAlign: 'left', borderBottom: '1px solid #1e293b' }}>
+                                <th style={{ padding: '1rem 2rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Encomendista</th>
+                                <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'center' }}>Envíos</th>
+                                <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'center' }}>Estados</th>
+                                <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'right' }}>Costo Envío</th>
+                                <th style={{ padding: '1rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'right' }}>Total Vendido</th>
+                                <th style={{ padding: '1rem 2rem', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', textAlign: 'center' }}>Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {deliveries.map((d: any, idx: number) => (
+                                <motion.tr
+                                    key={`delivery-${d.id || idx}`}
+                                    initial={{ opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: idx * 0.04 }}
+                                    style={{ borderBottom: '1px solid #1e293b60', transition: 'background 0.2s' }}
+                                    className="hover-row"
+                                >
+                                    <td style={{ padding: '1.1rem 2rem', fontSize: '1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#06b6d420', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Truck size={18} />
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                            <span style={{ color: 'white' }}>{d.name}</span>
+                                            {d.phone && <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>{d.phone}</span>}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem' }}>
+                                            <span style={{ padding: '0.35rem 0.9rem', borderRadius: '20px', background: '#06b6d415', color: '#22d3ee', fontSize: '0.9rem', fontWeight: 700 }}>{d.count}</span>
+                                            <div style={{ width: '100px', height: '5px', background: '#1e293b', borderRadius: '20px', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${(d.count / maxCount) * 100}%`, background: 'linear-gradient(90deg, #06b6d4, #22d3ee)', borderRadius: '20px' }} />
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                        <div style={{ display: 'flex', gap: '0.3rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                            {d.pendientes > 0 && <span style={{ padding: '0.2rem 0.5rem', borderRadius: '6px', background: 'rgba(59,130,246,0.15)', color: '#60a5fa', fontSize: '0.7rem', fontWeight: 700 }}>{d.pendientes} P</span>}
+                                            {d.despachados > 0 && <span style={{ padding: '0.2rem 0.5rem', borderRadius: '6px', background: 'rgba(245,158,11,0.15)', color: '#fbbf24', fontSize: '0.7rem', fontWeight: 700 }}>{d.despachados} D</span>}
+                                            {d.entregados > 0 && <span style={{ padding: '0.2rem 0.5rem', borderRadius: '6px', background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: '0.7rem', fontWeight: 700 }}>{d.entregados} E</span>}
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'right', color: '#f59e0b', fontWeight: 700 }}>
+                                        {formatCurrency(d.shippingTotal)}
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'right', color: '#10b981', fontWeight: 800, fontSize: '1.05rem' }}>
+                                        {formatCurrency(d.total)}
+                                    </td>
+                                    <td style={{ padding: '1rem 2rem', textAlign: 'center' }}>
+                                        <button
+                                            onClick={() => openDetail(d)}
+                                            style={{ padding: '0.4rem 0.9rem', borderRadius: '8px', background: 'rgba(6,182,212,0.15)', color: '#22d3ee', border: '1px solid rgba(6,182,212,0.3)', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', transition: 'all 0.15s' }}
+                                        >
+                                            <ChevronRight size={12} /> Ver {d.count}
+                                        </button>
+                                    </td>
+                                </motion.tr>
+                            ))}
+                            {deliveries.length === 0 && (
+                                <tr><td colSpan={6} style={{ padding: '4rem', textAlign: 'center', color: '#475569' }}>
+                                    <Truck size={40} color="#1e293b" style={{ marginBottom: '0.75rem', display: 'block', margin: '0 auto 0.75rem' }} />
+                                    No hay envíos asignados a encomendistas en este periodo.
+                                </td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <AnimatePresence>
+                {modalDelivery && (
+                    <div className="modal-overlay" style={{ zIndex: 5000, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(8px)' }} onClick={() => setModalDelivery(null)}>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            onClick={e => e.stopPropagation()}
+                            style={{ background: '#0f172a', borderRadius: '20px', width: 'min(820px, 95vw)', maxHeight: '85vh', display: 'flex', flexDirection: 'column', border: '1px solid #1e293b', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}
+                        >
+                            <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#06b6d420', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Truck size={22} />
+                                    </div>
+                                    <div>
+                                        <h3 style={{ margin: 0, color: 'white', fontSize: '1.15rem', fontWeight: 800 }}>{modalDelivery.name}</h3>
+                                        <p style={{ margin: '2px 0 0', color: '#64748b', fontSize: '0.78rem' }}>
+                                            {modalDelivery.phone ? `${modalDelivery.phone} · ` : ''}{detailData.length} envío(s) en el periodo
+                                        </p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setModalDelivery(null)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '0.4rem', borderRadius: '8px' }}><X size={22} /></button>
+                            </div>
+
+                            <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 2rem' }}>
+                                {loadingDetail ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '1rem' }}>
+                                        <div className="loading-spinner"></div>
+                                        <p style={{ color: '#64748b' }}>Cargando envíos...</p>
+                                    </div>
+                                ) : detailData.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '3rem', color: '#475569' }}>No se encontraron envíos.</div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        {detailData.map((s: any) => {
+                                            const st = STATUS_INFO[s.fulfillmentStatus] || { label: s.fulfillmentStatus, color: '#94a3b8', bg: 'rgba(148,163,184,0.15)' };
+                                            return (
+                                                <div key={s.id} style={{ background: '#1e293b', borderRadius: '14px', border: '1px solid #334155', overflow: 'hidden' }}>
+                                                    <div style={{ padding: '0.85rem 1.1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', borderBottom: '1px solid #33415540' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                                                            <span style={{ fontWeight: 800, color: 'white', fontSize: '0.9rem' }}>#{s.id}</span>
+                                                            <span style={{ padding: '0.2rem 0.6rem', borderRadius: '6px', background: st.bg, color: st.color, fontSize: '0.7rem', fontWeight: 700 }}>{st.label}</span>
+                                                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
+                                                                {new Date(s.createdAt).toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                                            </span>
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <span style={{ color: '#10b981', fontWeight: 800, fontSize: '1rem' }}>{formatCurrency(s.total)}</span>
+                                                            {s.shipping > 0 && <span style={{ display: 'block', fontSize: '0.7rem', color: '#f59e0b', fontWeight: 600 }}>Envío: {formatCurrency(s.shipping)}</span>}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ padding: '0.75rem 1.1rem' }}>
+                                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '0.5rem', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                                            <span><strong style={{ color: '#e2e8f0' }}>{s.clientName}</strong>{s.clientPhone ? ` · ${s.clientPhone}` : ''}</span>
+                                                            {s.clientAddress && <span style={{ color: '#64748b' }}>{s.clientAddress}</span>}
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                            {s.items.map((it: any, i: number) => (
+                                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                                                                    <span>{it.quantity}× {it.productName}</span>
+                                                                    <span style={{ fontWeight: 600 }}>{formatCurrency(it.subtotal)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        <div style={{ marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px dashed #334155', display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#64748b' }}>
+                                                            <span>Pago: {s.paymentMethod} · Vendedor: {s.sellerName}</span>
+                                                            {s.shippingDate && <span>Envío: {new Date(s.shippingDate).toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit' })}</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

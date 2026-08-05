@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { getIO } = require('../services/socketManager');
+const { toSVNoon } = require('../utils/tz');
 
 const createPurchase = async (req, res) => {
     const { branch_id, provider_id, invoice_number, payment_type, details, customDate } = req.body;
@@ -18,7 +19,7 @@ const createPurchase = async (req, res) => {
                     unitCost: Number(item.unit_cost),
                     subtotal: subtotal,
                     batchNumber: item.batchNumber || item.batch_number,
-                    expirationDate: item.expirationDate || item.expiration_date ? new Date((item.expirationDate || item.expiration_date) + 'T12:00:00-06:00') : null
+                    expirationDate: item.expirationDate || item.expiration_date ? toSVNoon(item.expirationDate || item.expiration_date) : null
                 };
             });
 
@@ -32,7 +33,7 @@ const createPurchase = async (req, res) => {
                     total: total,
                     paymentType: payment_type,
                     balance: payment_type === 'CREDIT' ? total : 0,
-                    createdAt: customDate ? new Date(customDate + 'T12:00:00-06:00') : undefined,
+                    createdAt: customDate ? toSVNoon(customDate) : undefined,
                     details: {
                         create: purchaseDetails.map(d => ({
                             productId: d.productId,

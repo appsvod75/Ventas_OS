@@ -90,7 +90,7 @@ const LabelPreview = forwardRef<HTMLDivElement, { shipment: any; businessConfig:
                 case 'delivery':
                     return shipment.delivery?.name ? (
                         <div key={field} style={{ fontSize: '8pt', marginBottom: '1mm' }}>
-                            <span>Delivery: <span style={{ fontWeight: 'bold' }}>{shipment.delivery.name}</span>{shipment.delivery.phone ? ` · ${shipment.delivery.phone}` : ''}</span>
+                            <span>Encomendista: <span style={{ fontWeight: 'bold' }}>{shipment.delivery.name}</span>{shipment.delivery.phone ? ` · ${shipment.delivery.phone}` : ''}</span>
                         </div>
                     ) : null;
                 case 'products':

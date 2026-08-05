@@ -52,14 +52,17 @@ const updateConfig = async (req, res) => {
 
         let { 
             businessName, address, phone, logoUrl, geminiApiKey, 
-            ticketHeader, ticketFooter, isAutoClosingEnabled, 
-            autoClosingTime, sidebarConfig, adminPin,
+            ticketHeader, ticketFooter, isAutoClosingEnabled, isAutoOpeningEnabled,
+            autoClosingTime, autoOpeningTime, sidebarConfig, adminPin,
             emailWebhookUrl, enableEmailTickets, ticketWidth, enableQrCode,
             labelFields, labelSections
         } = req.body;
 
         if (isAutoClosingEnabled === false) {
             autoClosingTime = '';
+        }
+        if (isAutoOpeningEnabled === false) {
+            autoOpeningTime = '';
         }
 
         // Stringify sidebarConfig for SQLite TEXT storage
@@ -75,7 +78,7 @@ const updateConfig = async (req, res) => {
 
         const dataToUpdate = { 
             businessName, address, phone, logoUrl, geminiApiKey, 
-            ticketHeader, ticketFooter, autoClosingTime, sidebarConfig,
+            ticketHeader, ticketFooter, autoClosingTime, autoOpeningTime, sidebarConfig,
             adminPin, emailWebhookUrl, enableEmailTickets, ticketWidth, enableQrCode,
             labelFields, labelSections
         };

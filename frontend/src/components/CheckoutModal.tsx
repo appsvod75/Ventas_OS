@@ -42,7 +42,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
     const [selectedDelivery, setSelectedDelivery] = useState<any | null>(null);
     const [showNewDeliveryForm, setShowNewDeliveryForm] = useState(false);
     const [newDeliveryName, setNewDeliveryName] = useState('');
-    const [isDeliverySearchFocused, setIsDeliverySearchFocused] = useState(false);
     const [deliveryFiltered, setDeliveryFiltered] = useState<any[]>([]);
 
     const isTablet = true; // FORZADO PARA PC (Videos): window.matchMedia('(min-width: 901px) and (max-width: 1300px)').matches;
@@ -459,7 +458,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                         )}
 
                         <div className="section-card">
-                            <h4 className="section-title"><Truck size={14} /> DELIVERY</h4>
+                            <h4 className="section-title"><Truck size={14} /> DELIVERY/ENCOMENDISTA</h4>
                             {selectedDelivery ? (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', borderRadius: '8px', padding: '0.4rem 0.75rem' }}>
                                     <span style={{ color: '#10b981', fontWeight: 700, fontSize: '0.8rem' }}>{selectedDelivery.name}</span>
@@ -467,24 +466,22 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({ orderTotal, shipping = 0,
                                 </div>
                             ) : (
                                 <div style={{ position: 'relative' }}>
-                                    <input type="text" placeholder="Buscar delivery..." value={searchDelivery} 
+                                    <input type="text" placeholder="Buscar encomendista..." value={searchDelivery}
                                         onChange={e => setSearchDelivery(e.target.value)}
-                                        onFocus={() => setIsDeliverySearchFocused(true)}
-                                        onBlur={() => setTimeout(() => setIsDeliverySearchFocused(false), 200)}
                                         style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '0.4rem 0.6rem', color: 'white', fontSize: '0.75rem', outline: 'none', boxSizing: 'border-box' }} />
-                                    {isDeliverySearchFocused && searchDelivery && deliveryFiltered.length > 0 && (
+                                    {searchDelivery && deliveryFiltered.length > 0 && (
                                         <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10, background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', marginTop: '2px', maxHeight: '150px', overflowY: 'auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
                                             {deliveryFiltered.map((d: any) => (
-                                                <div key={d.id} onClick={() => { setSelectedDelivery(d); setSearchDelivery(''); }}
-                                                    style={{ padding: '0.4rem 0.6rem', cursor: 'pointer', borderBottom: '1px solid #0f172a', fontSize: '0.75rem', color: '#e2e8f0', fontWeight: 600, transition: 'background 0.15s' }}
+                                                <button type="button" key={d.id} onClick={() => { setSelectedDelivery(d); setSearchDelivery(''); }}
+                                                    style={{ width: '100%', textAlign: 'left', padding: '0.4rem 0.6rem', cursor: 'pointer', borderBottom: '1px solid #0f172a', fontSize: '0.75rem', color: '#e2e8f0', fontWeight: 600, transition: 'background 0.15s', background: 'transparent', border: 'none', display: 'block', fontFamily: 'inherit' }}
                                                     onMouseEnter={e => e.currentTarget.style.background = '#0f172a'}
                                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                                     {d.name} {d.phone ? `(${d.phone})` : ''}
-                                                </div>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
-                                    {isDeliverySearchFocused && searchDelivery && deliveryFiltered.length === 0 && (
+                                    {searchDelivery && deliveryFiltered.length === 0 && (
                                         <div onClick={async () => {
                                             if (!searchDelivery.trim()) return;
                                             try {

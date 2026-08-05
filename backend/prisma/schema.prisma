@@ -325,6 +325,7 @@ model MasterConfig {
   ticketHeader      String?
   ticketFooter      String?
   autoClosingTime   String?  @default("23:59")
+  autoOpeningTime   String?  @default("06:00")
   sidebarConfig     String?
   adminPin          String?
   emailWebhookUrl   String?

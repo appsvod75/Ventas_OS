@@ -1,5 +1,6 @@
 const prisma = require('../db');
 const { startOfDay, endOfDay } = require('date-fns');
+const { toSVDate, toSVEndOfDay } = require('../utils/tz');
 
 const getDashboardStats = async (req, res) => {
     try {
@@ -8,8 +9,8 @@ const getDashboardStats = async (req, res) => {
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
         const targetDateStr = date || todayStr;
 
-        const start = new Date(`${targetDateStr}T00:00:00-06:00`);
-        const end = new Date(`${targetDateStr}T23:59:59-06:00`);
+        const start = toSVDate(targetDateStr);
+        const end = toSVEndOfDay(targetDateStr);
 
         const whereClause = {
             createdAt: {
@@ -89,12 +90,8 @@ const getReports = async (req, res) => {
         
         // Forzamos el offset El Salvador para los reportes
         const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
-        
-        const startStr = startDate ? `${startDate}T00:00:00-06:00` : `${todayStr}T00:00:00-06:00`;
-        const endStr = endDate ? `${endDate}T23:59:59-06:00` : `${todayStr}T23:59:59-06:00`;
-
-        const start = new Date(startStr);
-        const end = new Date(endStr);
+        const start = toSVDate(startDate || todayStr);
+        const end = toSVEndOfDay(endDate || todayStr);
         
         const user_role = req.user.role;
         const user_branch_id = req.user.branch_id;
@@ -278,6 +275,51 @@ const getReports = async (req, res) => {
             };
         }));
 
+        // 8. Sales by Delivery (Encomendistas) — solo ventas con delivery asignado
+        const deliveryStats = await prisma.saleH.groupBy({
+            by: ['deliveryId'],
+            where: {
+                ...whereClause,
+                deliveryId: { not: null }
+            },
+            _sum: { total: true, shipping: true },
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } }
+        });
+
+        const salesByDelivery = await Promise.all(deliveryStats.map(async (stat) => {
+            const delivery = await prisma.delivery.findUnique({
+                where: { id: stat.deliveryId },
+                select: { name: true, phone: true }
+            });
+
+            const statusCounts = await prisma.saleH.groupBy({
+                by: ['fulfillmentStatus'],
+                where: {
+                    ...whereClause,
+                    deliveryId: stat.deliveryId
+                },
+                _count: { id: true }
+            });
+
+            const statusMap = {};
+            statusCounts.forEach(s => {
+                statusMap[s.fulfillmentStatus] = s._count.id;
+            });
+
+            return {
+                id: stat.deliveryId,
+                name: delivery?.name || 'Encomendista ELIMINADO',
+                phone: delivery?.phone || null,
+                count: stat._count.id || 0,
+                total: Number(stat._sum.total || 0),
+                shippingTotal: Number(stat._sum.shipping || 0),
+                pendientes: statusMap['VENDIDO'] || 0,
+                despachados: statusMap['DESPACHADO'] || 0,
+                entregados: statusMap['ENTREGADO'] || 0
+            };
+        }));
+
         res.json({
             summary: {
                 totalSales,
@@ -290,7 +332,8 @@ const getReports = async (req, res) => {
             paymentMethods,
             salesTrend,
             salesByUser,
-            branchPerformance
+            branchPerformance,
+            salesByDelivery
         });
 
     } catch (error) {
@@ -306,8 +349,8 @@ const getReports = async (req, res) => {
 const getSalesBySeller = async (req, res) => {
     try {
         const { startDate, endDate, sellerId, branchId } = req.query;
-        const start = new Date(`${startDate || '2000-01-01'}T00:00:00-06:00`);
-        const end = new Date(`${endDate || '2100-12-31'}T23:59:59-06:00`);
+        const start = toSVDate(startDate || '2000-01-01');
+        const end = toSVEndOfDay(endDate || '2100-12-31');
 
         const whereSale = {
             createdAt: { gte: start, lte: end },
@@ -365,8 +408,78 @@ const getSalesBySeller = async (req, res) => {
     }
 };
 
+const getDeliveryDetail = async (req, res) => {
+    try {
+        const { startDate, endDate, branchId, deliveryId } = req.query;
+
+        const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'America/El_Salvador' });
+        const start = toSVDate(startDate || todayStr);
+        const end = toSVEndOfDay(endDate || todayStr);
+
+        const user_role = req.user.role;
+        const user_branch_id = req.user.branch_id;
+
+        const whereClause = {
+            createdAt: { gte: start, lte: end },
+            deliveryId: { not: null }
+        };
+
+        if (deliveryId) whereClause.deliveryId = parseInt(deliveryId);
+
+        if (user_role !== 'Super Admin' && user_role !== 'Admin') {
+            whereClause.branchId = user_branch_id;
+        } else if (branchId) {
+            whereClause.branchId = parseInt(branchId);
+        }
+
+        const shipments = await prisma.saleH.findMany({
+            where: whereClause,
+            include: {
+                client: { select: { name: true, phone: true, address: true } },
+                user: { select: { name: true } },
+                branch: { select: { name: true } },
+                delivery: { select: { name: true, phone: true } },
+                details: {
+                    include: { product: { select: { name: true } } }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const result = shipments.map(s => ({
+            id: s.id,
+            createdAt: s.createdAt,
+            total: Number(s.total),
+            shipping: Number(s.shipping || 0),
+            paymentMethod: s.paymentMethod,
+            fulfillmentStatus: s.fulfillmentStatus,
+            shippingDate: s.shippingDate,
+            deliveryDate: s.deliveryDate,
+            clientName: s.client?.name || 'Cliente Varios',
+            clientPhone: s.client?.phone || null,
+            clientAddress: s.client?.address || null,
+            sellerName: s.user?.name || '-',
+            branchName: s.branch?.name || '-',
+            deliveryName: s.delivery?.name || '-',
+            deliveryPhone: s.delivery?.phone || null,
+            items: s.details.map(d => ({
+                productName: d.product?.name || 'Producto',
+                quantity: d.quantity,
+                unitPrice: Number(d.unitPrice),
+                subtotal: Number(d.subtotal)
+            }))
+        }));
+
+        res.json(result);
+    } catch (error) {
+        console.error('Delivery detail error:', error);
+        res.status(500).json({ message: 'Error al obtener detalle de envíos por encomendista' });
+    }
+};
+
 module.exports = {
     getDashboardStats,
     getReports,
-    getSalesBySeller
+    getSalesBySeller,
+    getDeliveryDetail
 };
