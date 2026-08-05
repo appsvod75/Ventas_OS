@@ -52,6 +52,7 @@ const Clients: React.FC = () => {
     const [deliveries, setDeliveries] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [sellerFilter, setSellerFilter] = useState('');
+    const [showInactive, setShowInactive] = useState(false);
 
     const [activeKeyboard, setActiveKeyboard] = useState<'qwerty' | 'numeric' | null>(null);
     const [activeField, setActiveField] = useState<string | null>(null);
@@ -286,7 +287,8 @@ const Clients: React.FC = () => {
     const filteredClients = clients.filter(c =>
         ((c.name || '').toLowerCase().includes(search.toLowerCase()) ||
         (c.documentId && c.documentId.toLowerCase().includes(search.toLowerCase()))) &&
-        (!sellerFilter || c.createdById === Number(sellerFilter))
+        (!sellerFilter || c.createdById === Number(sellerFilter)) &&
+        (showInactive || c.isActive !== false)
     );
 
     const getAvatarColor = (name: string) => {
@@ -377,6 +379,10 @@ const Clients: React.FC = () => {
                         <button className="btn-add" onClick={handleOpenCreate}>
                             <UserPlus size={20} />
                             <span>Nuevo Cliente</span>
+                        </button>
+                        <button onClick={() => setShowInactive(!showInactive)} style={{ maxHeight: '100%', minHeight: '48px', background: showInactive ? 'rgba(239,68,68,0.15)' : '#1e293b', border: `1px solid ${showInactive ? 'rgba(239,68,68,0.4)' : '#334155'}`, borderRadius: '12px', padding: '0 1rem', color: showInactive ? '#ef4444' : '#94a3b8', fontSize: '0.8rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <User size={16} />
+                            {showInactive ? 'Mostrar solo activos' : 'Ver inactivos'}
                         </button>
                     </div>
                 </header>
